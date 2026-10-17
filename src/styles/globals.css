@@ -1,222 +1,66 @@
-    
-:root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  color: #172033;
-  background: #f4f7fb;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
+/* Sign-in pages (login, forgot/reset password, accept invitation). Tokens come from index.css. */
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-.invite-page {
+.auth-shell {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 32px 16px;
-  background:
-    radial-gradient(ellipse at top left, #e2eaff 0, transparent 45%),
-    #f4f7fb;
+  grid-template-columns: minmax(320px, 44%) 1fr;
+  background: #ffffff;
 }
 
-.invite-card {
-  width: 100%;
-  max-width: 440px;
-  padding: 38px;
-  background: #fff;
-  border: 1px solid #e7eaf0;
-  border-radius: 20px;
-  box-shadow: 0 18px 55px rgb(29 45 80 / 8%);
-}
-
-.brand-mark {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 14px;
-  background: #253c91;
-  color: #fff;
-  font-size: 25px;
-  font-weight: 800;
-}
-
-.eyebrow {
-  margin: 14px 0 8px;
-  color: #394fa5;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 2px;
-}
-
-.invite-card h1 {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: -0.8px;
-}
-
-.subtitle,
-.muted-text {
-  color: #667085;
-  font-size: 14px;
-  line-height: 1.65;
-}
-
-.invite-form {
-  display: grid;
-  gap: 10px;
-  margin-top: 26px;
-}
-
-.invite-form label {
-  margin-top: 8px;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.password-field {
+.auth-brand {
   position: relative;
-}
-
-.password-field input {
-  width: 100%;
-  height: 48px;
-  padding: 0 46px 0 14px;
-  border: 1px solid #d7dce5;
-  border-radius: 10px;
-  outline: none;
-  background: #fff;
-}
-
-.password-field input:focus {
-  border-color: #5268c9;
-  box-shadow: 0 0 0 3px rgb(82 104 201 / 12%);
-}
-
-.visibility-button {
-  position: absolute;
-  top: 0;
-  right: 5px;
-  display: grid;
-  width: 38px;
-  height: 48px;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: #667085;
-  cursor: pointer;
-}
-
-.primary-button {
+  overflow: hidden;
   display: flex;
-  width: 100%;
-  min-height: 48px;
-  align-items: center;
-  justify-content: center;
-  margin-top: 12px;
-  border: 0;
-  border-radius: 10px;
-  background: #253c91;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 48px;
+  color: #f5f3ff;
+  background:
+    radial-gradient(circle at 15% 15%, rgb(192 132 252 / 45%), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgb(139 92 246 / 50%), transparent 45%),
+    linear-gradient(160deg, #4c1d95 0%, #2e1065 100%);
 }
 
-.primary-button:hover:not(:disabled) {
-  background: #1d3077;
-}
+.auth-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.auth-logo b { color: #d8b4fe; font-weight: 700; }
+.auth-brand h2 { color: #fff; font-size: 32px; line-height: 1.2; letter-spacing: -0.03em; max-width: 380px; }
+.auth-brand ul { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; font-size: 15px; }
+.auth-brand li { display: flex; align-items: center; gap: 10px; color: #ede9fe; }
+.auth-brand li svg { color: #c4b5fd; flex: none; }
+.auth-foot { color: #c4b5fd; font-size: 12px; }
 
-.primary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.auth-main { display: grid; place-items: center; padding: 40px 24px; background: #ffffff; }
+.auth-panel { width: 100%; max-width: 400px; display: grid; gap: 16px; }
+.auth-panel h1 { font-size: 28px; letter-spacing: -0.03em; }
+.auth-sub { color: var(--ink-500); margin-top: -8px; }
+.auth-form { display: grid; gap: 14px; }
+.auth-form > label { font-size: 13px; font-weight: 600; color: var(--ink-700); margin-bottom: -8px; }
+.auth-submit { width: 100%; height: 42px; font-size: 15px; margin-top: 4px; }
+.auth-note { color: var(--ink-500); font-size: 13px; text-align: center; }
+
+.password-field { position: relative; }
+.password-field .input { padding-right: 42px; }
+.visibility-button {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  display: grid; place-items: center; width: 30px; height: 30px; border: none; border-radius: 6px;
+  background: transparent; color: var(--ink-500); cursor: pointer;
 }
+.visibility-button:hover { background: var(--brand-50); color: var(--brand-700); }
 
 .form-error {
-  margin: 4px 0;
-  color: #b42318;
-  font-size: 13px;
-  line-height: 1.5;
+  margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px;
+  background: #fef3f2; border: 1px solid #fecdca; color: var(--red-600);
 }
+.security-note { display: flex; align-items: center; gap: 8px; color: var(--ink-500); font-size: 12px; justify-content: center; }
+.security-note svg { color: var(--brand-600); }
+.muted-text { color: var(--ink-500); font-size: 14px; }
+.invite-result { display: grid; gap: 14px; text-align: center; justify-items: center; }
+.invite-icon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; }
+.success-icon { background: var(--green-100); color: var(--green-600); }
 
-.security-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin: 24px 0 0;
-  color: #667085;
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: center;
+@media (max-width: 860px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-brand { padding: 28px 24px; }
+  .auth-brand h2 { font-size: 24px; }
+  .auth-brand ul, .auth-foot { display: none; }
 }
-
-.invite-result {
-  text-align: center;
-}
-
-.invite-icon {
-  display: inline-grid;
-  width: 58px;
-  height: 58px;
-  place-items: center;
-  margin-bottom: 18px;
-  border-radius: 50%;
-}
-
-.success-icon {
-  background: #e7f7ed;
-  color: #18794e;
-}
-
-.link-button {
-  text-decoration: none;
-}
-
-@media (max-width: 480px) {
-  .invite-card {
-    padding: 28px 22px;
-  }
-
-  .invite-card h1 {
-    font-size: 25px;
-  }
-}
-
-
-
-/* Fix password field interaction */
-.invite-form,
-.password-field {
-  position: relative;
-  z-index: 1;
-}
-
-.password-field input {
-  position: relative;
-  z-index: 2;
-  pointer-events: auto;
-  color: #172033;
-  background-color: #ffffff;
-  opacity: 1;
-  user-select: text;
-  -webkit-user-select: text;
-}
-
-.visibility-button {
-  z-index: 3;
-}
-

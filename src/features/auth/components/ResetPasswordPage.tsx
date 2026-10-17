@@ -1,7 +1,7 @@
-
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { resetPassword } from "../services/authService";
+import AuthLayout from "./AuthLayout";
 
 export default function ResetPasswordPage() {
   const location = useLocation();
@@ -23,7 +23,7 @@ export default function ResetPasswordPage() {
     setError("");
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("The two passwords don't match.");
       return;
     }
 
@@ -36,14 +36,14 @@ export default function ResetPasswordPage() {
         new_password: newPassword,
       });
 
-      setMessage(response.message || "Password reset successfully.");
+      setMessage(response.message || "Your password has been changed.");
       navigate("/login", {
-        state: { message: response.message || "Password reset successfully." },
+        state: { message: response.message || "Your password has been changed. You can sign in now." },
       });
     } catch (err: any) {
       setError(
         err.response?.data?.detail ||
-          "Unable to reset password. Check your OTP and try again.",
+          "We couldn't change your password. Check the code and try again.",
       );
     } finally {
       setLoading(false);
@@ -51,65 +51,47 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="auth-container">
-      <section className="auth-card">
-        <h1>Reset Password</h1>
-        <p>Enter your OTP and choose a new password.</p>
+    <AuthLayout>
+      <h1>Set a new password</h1>
+      <p className="auth-sub">Enter the code we emailed you and choose a new password.</p>
 
-        {message && <p role="status">{message}</p>}
-        {error && <p role="alert">{error}</p>}
+      {message && <div className="alert success" role="status">{message}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="email">Email address</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            autoComplete="email"
-            required
-          />
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input id="email" className="input" type="email" value={email}
+                 onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
+        </div>
 
-          <label htmlFor="otp">OTP</label>
-          <input
-            id="otp"
-            type="text"
-            value={otp}
-            onChange={(event) => setOtp(event.target.value)}
-            placeholder="Enter OTP"
-            autoComplete="one-time-code"
-            required
-          />
+        <div className="field">
+          <label htmlFor="otp">Code from the email</label>
+          <input id="otp" className="input" type="text" value={otp} onChange={(event) => setOtp(event.target.value)}
+                 placeholder="e.g. 123456" autoComplete="one-time-code" inputMode="numeric" required />
+        </div>
 
+        <div className="field">
           <label htmlFor="newPassword">New password</label>
-          <input
-            id="newPassword"
-            type="password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            autoComplete="new-password"
-            required
-          />
+          <input id="newPassword" className="input" type="password" value={newPassword}
+                 onChange={(event) => setNewPassword(event.target.value)} placeholder="At least 8 characters"
+                 autoComplete="new-password" required />
+        </div>
 
-          <label htmlFor="confirmPassword">Confirm new password</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            autoComplete="new-password"
-            required
-          />
+        <div className="field">
+          <label htmlFor="confirmPassword">Type it again</label>
+          <input id="confirmPassword" className="input" type="password" value={confirmPassword}
+                 onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" required />
+        </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Resetting..." : "Reset Password"}
-          </button>
-        </form>
+        <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
+          {loading ? "Saving…" : "Save new password"}
+        </button>
+      </form>
 
-        <p>
-          Back to <Link to="/login">Login</Link>
-        </p>
-      </section>
-    </main>
+      <p className="auth-note">
+        <Link to="/login">Back to sign in</Link>
+      </p>
+    </AuthLayout>
   );
 }

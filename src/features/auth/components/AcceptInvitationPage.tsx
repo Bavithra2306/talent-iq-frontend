@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useAcceptInvitation } from "../queries/authQueries";
+import AuthLayout from "./AuthLayout";
 
 export default function AcceptInvitationPage() {
   const [password, setPassword] = useState("");
@@ -51,8 +52,8 @@ export default function AcceptInvitationPage() {
 
   if (invitationMutation.isSuccess) {
     return (
-      <main className="invite-page">
-        <section className="invite-card invite-result">
+      <AuthLayout>
+        <section className="invite-result">
           <div className="invite-icon success-icon">
             <ShieldCheck size={30} />
           </div>
@@ -62,32 +63,30 @@ export default function AcceptInvitationPage() {
               "Your password has been set successfully."}
           </p>
           <p className="muted-text">
-            You can now continue to the TalentIQ login page.
+            You can now sign in to TalentIQ.
           </p>
-          <a className="primary-button link-button" href="/login">
-            Continue to login
+          <a className="btn btn-primary auth-submit" href="/login">
+            Go to sign in
           </a>
         </section>
-      </main>
+      </AuthLayout>
     );
   }
 
   return (
-    <main className="invite-page">
-      <section className="invite-card">
-        <div className="brand-mark">T</div>
-        <p className="eyebrow">TALENTIQ</p>
+    <AuthLayout>
+      <section>
         <h1>Set up your account</h1>
-        <p className="subtitle">
-          Welcome to TalentIQ. Create a password to activate your account
-          setup.
+        <p className="auth-sub">
+          Welcome to TalentIQ! Choose a password to finish setting up your account.
         </p>
 
-        <form onSubmit={handleSubmit} className="invite-form">
+        <form onSubmit={handleSubmit} className="auth-form">
           <label htmlFor="password">Password</label>
           <div className="password-field">
             <input
               id="password"
+              className="input"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               minLength={8}
@@ -110,6 +109,7 @@ export default function AcceptInvitationPage() {
           <div className="password-field">
             <input
               id="confirmPassword"
+              className="input"
               type={showConfirmPassword ? "text" : "password"}
               autoComplete="new-password"
               value={confirmPassword}
@@ -139,7 +139,7 @@ export default function AcceptInvitationPage() {
 
           {!token && (
              <p className="form-error" role="alert">
-                No invitation token found. Please open the invitation link sent to your email.
+                This page needs the link from your invitation email. Please open that link again.
             </p>
             )}
 
@@ -153,7 +153,7 @@ export default function AcceptInvitationPage() {
           )}
 
           <button
-            className="primary-button"
+            className="btn btn-primary auth-submit"
             type="submit"
             disabled={invitationMutation.isPending}          >
             {invitationMutation.isPending
@@ -164,9 +164,9 @@ export default function AcceptInvitationPage() {
 
         <p className="security-note">
           <ShieldCheck size={16} />
-          Your password is sent securely to the TalentIQ authentication API.
+          Your password is sent securely and stored encrypted.
         </p>
       </section>
-    </main>
+    </AuthLayout>
   );
 }

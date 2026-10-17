@@ -1,7 +1,9 @@
 
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { login } from "../services/authService";
+import AuthLayout from "./AuthLayout";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -9,6 +11,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,11 +35,11 @@ export default function LoginPage() {
       const status = err.response?.status;
 
       if (status === 401 || status === 400) {
-        setError("Email or password is incorrect.");
+        setError("That email and password don't match. Please try again.");
       } else {
         setError(
           err.response?.data?.detail ||
-            "Unable to log in right now. Please try again.",
+            "We couldn't sign you in right now. Please try again.",
         );
       }
     } finally {
@@ -45,49 +48,57 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="login-page">
-      <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Welcome to TalentIQ</h1>
-        <p>Sign in to your account</p>
+    <AuthLayout>
+      <h1>Welcome back</h1>
+      <p className="auth-sub">Sign in to continue to TalentIQ.</p>
 
-        {successMessage && (
-          <p role="status">{successMessage}</p>
-        )}
+      {successMessage && <div className="alert success" role="status">{successMessage}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
 
-        {error && (
-          <p role="alert">{error}</p>
-        )}
-
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="Enter your email"
-          autoComplete="email"
-          required
-        />
-
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Enter your password"
-          autoComplete="current-password"
-          required
-        />
-
-        <div className="forgot-password-link">
-          <Link to="/forgot-password">Forgot password?</Link>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            className="input"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
+            autoComplete="email"
+            required
+          />
         </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Signing in..." : "Login"}
+        <div className="field">
+          <div className="spread">
+            <label htmlFor="password">Password</label>
+            <Link to="/forgot-password" className="small">Forgot password?</Link>
+          </div>
+          <div className="password-field">
+            <input
+              id="password"
+              className="input"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Your password"
+              autoComplete="current-password"
+              required
+            />
+            <button type="button" className="visibility-button" aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((v) => !v)}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
+          {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
-    </main>
+
+      <p className="auth-note">New here? Ask your admin to send you an invitation.</p>
+    </AuthLayout>
   );
 }

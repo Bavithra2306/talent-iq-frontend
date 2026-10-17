@@ -1,0 +1,212 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Search, Upload, Users, X } from "lucide-react";
+import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../components/ui";
+import { api, openFile } from "../../lib/api";
+import { errorMessage } from "../../lib/axios";
+import { formatDateTime, formatYears, labelize } from "../../lib/format";
+import BatchProgress from "./BatchProgress";
+
+const LIMIT = 20;
+const BATCH_KEY = "talentiq.lastBatch";
+
+function storedBatch(): string | null {
+  try { return localStorage.getItem(BATCH_KEY); } catch { return null; }
+}
+
+export default function CandidatesPage() {
+  const queryClient = useQueryClient();
+  const [files, setFiles] = useState<File[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [batchId, setBatchId] = useState<string | null>(storedBatch);
+  const [rejected, setRejected] = useState<{ filename: string; reason: string }[]>([]);
+  const [filters, setFilters] = useState({ category: "", search: "", skill: "", location: "", min_experience: "", sort: "date_added", order: "desc" });
+  const [offset, setOffset] = useState(0);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const categories = useQuery({ queryKey: ["categories"], queryFn: api.categories });
+  const list = useQuery({
+    queryKey: ["candidates", filters, offset],
+    queryFn: () => api.listCandidates({ ...filters, limit: LIMIT, offset }),
+  });
+  const upload = useMutation({
+    mutationFn: () => api.uploadResumes(files, setProgress),
+    onSuccess: (res) => {
+      setFiles([]);
+      setRejected(res.rejected);
+      if (res.batch_id) {
+        setBatchId(res.batch_id);
+        try { localStorage.setItem(BATCH_KEY, res.batch_id); } catch { /* storage unavailable */ }
+      }
+    },
+  });
+
+  const setFilter = (key: keyof typeof filters, value: string) => { setFilters((f) => ({ ...f, [key]: value })); setOffset(0); };
+  const addFiles = (incoming: File[]) => {
+    const ok = incoming.filter((f) => /\.(pdf|docx)$/i.test(f.name));
+    setFiles((prev) => [...prev, ...ok.filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size))]);
+  };
+
+  return (
+    <>
+      <PageHeader title="Candidates" subtitle="Upload resumes in bulk; they are read, categorised and indexed automatically." />
+
+      <div className="grid grid-2" style={{ marginBottom: 16 }}>
+        <div className="card">
+          <div className="card-header"><div><h2>Upload resumes</h2><p>PDF, DOCX or scanned PDF — up to 200 files at once.</p></div></div>
+          <div className="card-body stack">
+            <FileDrop accept=".pdf,.docx" multiple onFiles={addFiles} hint="Duplicates are detected and skipped." />
+            {files.length > 0 && (
+              <>
+                <div className="file-list">
+                  {files.map((f) => (
+                    <div key={f.name + f.size} className="file-item">
+                      <span><FileText size={14} style={{ verticalAlign: -2 }} /> {f.name}</span>
+                      <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label="Remove"><X /></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="spread">
+                  <span className="muted">{files.length} file(s) selected</span>
+                  <button className="btn btn-primary" disabled={upload.isPending} onClick={() => upload.mutate()}>
+                    <Upload /> {upload.isPending ? `Uploading ${progress}%` : "Upload & process"}
+                  </button>
+                </div>
+              </>
+            )}
+            {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
+            {rejected.length > 0 && (
+              <Alert tone="warn">
+                {rejected.length} file(s) skipped: {rejected.slice(0, 4).map((r) => `${r.filename} (${r.reason})`).join("; ")}
+                {rejected.length > 4 && "…"}
+              </Alert>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header">
+            <div><h2>Latest upload</h2><p>Follow each step while your resumes are read.</p></div>
+            {batchId && <button className="btn btn-sm btn-ghost" onClick={() => { setBatchId(null); try { localStorage.removeItem(BATCH_KEY); } catch { /* ignore */ } }}>Clear</button>}
+          </div>
+          <div className="card-body">
+            {batchId ? (
+              <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.batchStatus}
+                             onFinished={() => {
+                               void queryClient.invalidateQueries({ queryKey: ["candidates"] });
+                               void queryClient.invalidateQueries({ queryKey: ["categories"] });
+                             }} />
+            ) : <p className="muted">Nothing running. Upload resumes to start.</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="toolbar" style={{ display: "block" }}>
+          <div className="chips">
+            <button className={`chip ${filters.category === "" ? "active" : ""}`} onClick={() => setFilter("category", "")}>All</button>
+            {categories.data?.map((c) => c.category && (
+              <button key={c.category} className={`chip ${filters.category === c.category ? "active" : ""}`}
+                      onClick={() => setFilter("category", c.category ?? "")}>
+                {c.category}<span className="count">{c.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="toolbar">
+          <div className="row grow" style={{ position: "relative" }}>
+            <Search size={16} style={{ position: "absolute", left: 10, color: "var(--ink-400)" }} />
+            <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Name, email or title"
+                   value={filters.search} onChange={(e) => setFilter("search", e.target.value)} />
+          </div>
+          <input className="input" placeholder="Skill" value={filters.skill} onChange={(e) => setFilter("skill", e.target.value)} />
+          <input className="input" placeholder="Location" value={filters.location} onChange={(e) => setFilter("location", e.target.value)} />
+          <input className="input" style={{ minWidth: 110 }} type="number" min={0} placeholder="Min yrs"
+                 value={filters.min_experience} onChange={(e) => setFilter("min_experience", e.target.value)} />
+          <select className="select" value={`${filters.sort}:${filters.order}`}
+                  onChange={(e) => { const [s, o] = e.target.value.split(":"); setFilters((f) => ({ ...f, sort: s, order: o })); }}>
+            <option value="date_added:desc">Newest first</option>
+            <option value="date_added:asc">Oldest first</option>
+            <option value="experience:desc">Most experience</option>
+            <option value="name:asc">Name A–Z</option>
+          </select>
+        </div>
+        {list.isLoading && <Loading />}
+        {list.isError && <div className="card-body"><Alert tone="error">{errorMessage(list.error)}</Alert></div>}
+        {list.data?.items.length === 0 && <Empty title="No candidates found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}
+        {list.data && list.data.items.length > 0 && (
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>Candidate</th><th>Category</th><th>Experience</th><th>Location</th><th>Top skills</th><th>Source</th><th>Added</th></tr></thead>
+              <tbody>
+                {list.data.items.map((c) => (
+                  <tr key={c.id} className="clickable" onClick={() => setOpenId(c.id)}>
+                    <td><div className="cell-title">{c.name ?? "Name not given"}</div><div className="cell-sub">{c.current_title ?? c.email ?? ""}</div></td>
+                    <td>{c.category ? <span className="badge brand plain">{c.category}</span> : "—"}</td>
+                    <td>{formatYears(c.total_years_experience)}</td>
+                    <td>{c.location ?? "—"}</td>
+                    <td><div className="chips">{c.skills.slice(0, 3).map((s) => <span key={s} className="tag gray">{s}</span>)}{c.skills.length > 3 && <span className="muted small">+{c.skills.length - 3}</span>}</div></td>
+                    <td className="muted">{labelize(c.source_site ?? "upload")}</td>
+                    <td className="muted">{formatDateTime(c.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {list.data && <Pagination total={list.data.total} limit={LIMIT} offset={offset} onChange={setOffset} />}
+      </div>
+
+      {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} />}
+    </>
+  );
+}
+
+function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
+  const detail = useQuery({ queryKey: ["candidate", id], queryFn: () => api.getCandidate(id) });
+  const c = detail.data;
+  return (
+    <Drawer title={c?.name ?? "Candidate"} onClose={onClose}
+            footer={<button className="btn btn-primary" onClick={() => void openFile(`/api/v1/candidates/${id}/resume`)}><FileText /> Open resume</button>}>
+      {detail.isLoading && <Loading />}
+      {detail.isError && <Alert tone="error">{errorMessage(detail.error)}</Alert>}
+      {c && (
+        <>
+          <dl className="kv">
+            <dt>Current title</dt><dd>{c.current_title ?? "—"}</dd>
+            <dt>Category</dt><dd>{c.category ?? "—"}</dd>
+            <dt>Experience</dt><dd>{formatYears(c.total_years_experience)}</dd>
+            <dt>Email</dt><dd>{c.email ?? "—"}</dd>
+            <dt>Phone</dt><dd>{c.contact ?? "—"}</dd>
+            <dt>Location</dt><dd>{c.location ?? "—"}</dd>
+            <dt>Status</dt><dd><StatusBadge status={c.status} /></dd>
+            <dt>Source</dt><dd>{labelize(c.source_site ?? "upload")} · {c.file_name}</dd>
+            <dt>Read by</dt><dd className="mono">{c.extraction_model ?? "—"}</dd>
+          </dl>
+          <div>
+            <h3 style={{ marginBottom: 8 }}>Skills</h3>
+            <div className="chips">{c.skills.map((s) => <span key={s} className="tag">{s}</span>)}</div>
+          </div>
+          <div>
+            <h3 style={{ marginBottom: 8 }}>Experience</h3>
+            {c.roles_and_years?.length ? (
+              <div className="events">
+                {c.roles_and_years.map((r, i) => (
+                  <div key={i} className="event" style={{ gridTemplateColumns: "1fr auto" }}>
+                    <div><strong>{r.title}</strong>{r.company && <span className="muted"> · {r.company}</span>}</div>
+                    <span className="muted">{r.years !== null ? formatYears(r.years) : ""}</span>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="muted">No roles listed.</p>}
+          </div>
+          <div>
+            <h3 style={{ marginBottom: 8 }}>Education</h3>
+            {c.education?.length ? c.education.map((e, i) => (
+              <p key={i}>{e.degree}{e.institution && <span className="muted"> · {e.institution}</span>}{e.year && <span className="muted"> · {e.year}</span>}</p>
+            )) : <p className="muted">No education listed.</p>}
+          </div>
+        </>
+      )}
+    </Drawer>
+  );
+}
