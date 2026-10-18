@@ -31,9 +31,6 @@ export async function openFile(url: string) {
 }
 
 export const api = {
-  // session (core knows the role from the token)
-  me: async () => (await apiClient.get<{ id: string; role: Role }>(`${v1}/me`)).data,
-
   // jobs
   listJobs: async (params: Params) => (await apiClient.get<Paged<Job>>(`${v1}/jobs`, { params: clean(params) })).data,
   getJob: async (id: string) => (await apiClient.get<Job>(`${v1}/jobs/${id}`)).data,

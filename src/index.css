@@ -304,3 +304,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .explain { background: var(--brand-50); border: 1px solid var(--brand-100); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; line-height: 1.6; }
 .notes { background: #fffaeb; border: 1px solid #fedf89; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; }
 .spin-icon { animation: spin 1s linear infinite; }
+
+/* ---------- top bar + profile menu ---------- */
+.topbar { display: flex; justify-content: flex-end; margin: -12px 0 8px; }
+.profile-menu { position: relative; }
+.profile-button { border: 2px solid var(--brand-100); background: none; padding: 0; border-radius: 50%; cursor: pointer; display: grid; }
+.profile-button:hover { border-color: var(--brand-500); }
+.profile-button .avatar { width: 36px; height: 36px; }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 8px); min-width: 230px; background: var(--surface);
+  border: 1px solid var(--ink-200); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 6px; z-index: 40;
+}
+.menu-head { display: grid; padding: 10px 10px 12px; border-bottom: 1px solid var(--ink-200); margin-bottom: 6px; font-size: 13px; }
+.menu-head span { color: var(--ink-500); }
+.menu button {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: none; background: none;
+  border-radius: var(--radius-sm); cursor: pointer; font-weight: 500; text-align: left;
+}
+.menu button:hover { background: var(--brand-50); color: var(--brand-700); }
+.menu button svg { width: 17px; height: 17px; }

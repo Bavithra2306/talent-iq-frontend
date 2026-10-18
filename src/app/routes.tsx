@@ -18,6 +18,7 @@ import JobShortlistPage from "../features/shortlist/JobShortlistPage";
 import ReviewPage from "../features/review/ReviewPage";
 import LogsPage from "../features/logs/LogsPage";
 import TeamPage from "../features/team/TeamPage";
+import ProfilePage from "../features/profile/ProfilePage";
 
 export default function AppRoutes() {
   return (
@@ -25,6 +26,7 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<LoginPage admin />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -40,6 +42,7 @@ export default function AppRoutes() {
           <Route path="review" element={<RequireRole roles={["hiring_manager"]}><ReviewPage /></RequireRole>} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="team" element={<RequireRole roles={["admin"]}><TeamPage /></RequireRole>} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

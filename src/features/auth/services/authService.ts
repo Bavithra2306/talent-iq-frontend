@@ -19,8 +19,19 @@ export interface CurrentUser {
   name: string | null;
   email: string;
   role_id: string;
+  role: "admin" | "hiring_manager" | "recruiter";
+  contact: string | null;
+  location: string | null;
   status: string;
   is_active: boolean;
+  last_login_at: string | null;
+  created_at: string | null;
+}
+
+export interface ProfileUpdate {
+  name: string | null;
+  contact: string | null;
+  location: string | null;
 }
 
 export interface ForgotPasswordRequest {
@@ -56,6 +67,27 @@ export async function login(
 ): Promise<LoginResponse> {
   const response = await apiClient.post<LoginResponse>(
     "/api/v1/auth/login",
+    payload,
+  );
+  return response.data;
+}
+
+/** Admins sign in through their own endpoint; it refuses everyone else. */
+export async function adminLogin(
+  payload: LoginRequest,
+): Promise<LoginResponse> {
+  const response = await apiClient.post<LoginResponse>(
+    "/api/v1/internal/login",
+    payload,
+  );
+  return response.data;
+}
+
+export async function updateProfile(
+  payload: ProfileUpdate,
+): Promise<CurrentUser> {
+  const response = await apiClient.patch<CurrentUser>(
+    "/api/v1/auth/me",
     payload,
   );
   return response.data;

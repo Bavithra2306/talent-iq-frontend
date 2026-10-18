@@ -14,7 +14,7 @@ export const apiClient = axios.create({
 // requests that fail at the same moment) and retry the original request.
 let refreshing: Promise<void> | null = null;
 
-const NO_RETRY = ["/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout"];
+const NO_RETRY = ["/api/v1/auth/login", "/api/v1/internal/login", "/api/v1/auth/refresh", "/api/v1/auth/logout"];
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -46,7 +46,7 @@ export function errorMessage(error: unknown, fallback = "Something went wrong. P
   if (axios.isAxiosError(error)) {
     const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
     if (typeof detail === "string") return detail;
-    if (Array.isArray(detail) && detail[0]?.msg) return String(detail[0].msg);
+    if (Array.isArray(detail) && detail[0]?.msg) return String(detail[0].msg).replace(/^Value error, /, "");
     if (!error.response) return "Cannot reach the server. Check that the services are running.";
   }
   return fallback;

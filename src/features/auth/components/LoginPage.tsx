@@ -2,10 +2,11 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { login } from "../services/authService";
+import { adminLogin, login } from "../services/authService";
 import AuthLayout from "./AuthLayout";
 
-export default function LoginPage() {
+/** Sign-in page. With `admin`, it is the admin sign-in (only admins are accepted there). */
+export default function LoginPage({ admin = false }: { admin?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,7 +25,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login({
+      const signIn = admin ? adminLogin : login;
+      await signIn({
         email: email.trim(),
         password,
       });
@@ -34,7 +36,9 @@ export default function LoginPage() {
     } catch (err: any) {
       const status = err.response?.status;
 
-      if (status === 401 || status === 400) {
+      if (status === 403) {
+        setError(err.response?.data?.detail || "This sign-in page isn't for your account.");
+      } else if (status === 401 || status === 400) {
         setError("That email and password don't match. Please try again.");
       } else {
         setError(
@@ -49,8 +53,9 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <h1>Welcome back</h1>
-      <p className="auth-sub">Sign in to continue to TalentIQ.</p>
+      {admin && <span className="badge brand plain" style={{ justifySelf: "start" }}>Admin</span>}
+      <h1>{admin ? "Admin sign in" : "Welcome back"}</h1>
+      <p className="auth-sub">{admin ? "Manage your team and see all activity." : "Sign in to continue to TalentIQ."}</p>
 
       {successMessage && <div className="alert success" role="status">{successMessage}</div>}
       {error && <div className="alert error" role="alert">{error}</div>}
@@ -98,7 +103,11 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="auth-note">New here? Ask your admin to send you an invitation.</p>
+      {admin ? (
+        <p className="auth-note">Recruiter or hiring manager? <Link to="/login">Sign in here</Link></p>
+      ) : (
+        <p className="auth-note">New here? Ask your admin to send you an invitation. · <Link to="/admin/login">Admin sign in</Link></p>
+      )}
     </AuthLayout>
   );
 }
