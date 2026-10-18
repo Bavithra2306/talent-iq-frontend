@@ -233,7 +233,7 @@ export interface DirectoryUser {
   name: string | null;
   email: string;
   role: Role;
-  status: "invite_sent" | "accepted" | "active";
+  status: "invite_sent" | "pending" | "active";
 }
 
 export interface SourceInfo {

@@ -71,8 +71,8 @@ export default function TeamPage() {
                             </button>
                           )}
                         </div>
-                      ) : m.status === "accepted"
-                        ? <span className="badge brand plain" title="Password set, not signed in yet">Accepted</span>
+                      ) : m.status === "pending"
+                        ? <span className="badge brand plain" title="Password set, not signed in yet">Pending</span>
                         : <span className="badge green">Active</span>}
                     </td>
                   </tr>
