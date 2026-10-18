@@ -77,6 +77,8 @@ export interface Candidate {
   skills: string[];
   source_site: string | null;
   created_at: string;
+  /** Status per job; empty = "New" (not matched to any job yet). */
+  job_statuses: { job_id: string; job_title: string; status: CandidateStatus; total_score: number | null }[];
 }
 
 export interface CandidateDetail extends Candidate {
@@ -231,6 +233,7 @@ export interface DirectoryUser {
   name: string | null;
   email: string;
   role: Role;
+  status: "invite_sent" | "pending" | "active";
 }
 
 export interface SourceInfo {

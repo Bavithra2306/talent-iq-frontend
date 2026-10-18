@@ -2,7 +2,7 @@ import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode,
 } from "react";
 import { AlertCircle, CheckCircle2, Circle, Info, Inbox, Loader2, UploadCloud, X, XCircle } from "lucide-react";
-import { describeAction, formatTime, friendlyDetails, labelize, STAGE_TONE, STATUS_TONE } from "../lib/format";
+import { describeAction, formatTime, friendlyDetails, labelize, STAGE_TONE, STATUS_LABEL, STATUS_TONE } from "../lib/format";
 import type { CandidateStatus, PipelineEvent, Stage } from "../types/api";
 
 // ---------- layout bits ----------
@@ -44,8 +44,8 @@ export function Alert({ tone = "info", children }: { tone?: "info" | "error" | "
 // ---------- badges and scores ----------
 
 export function StatusBadge({ status }: { status: CandidateStatus | null | undefined }) {
-  if (!status) return <span className="badge">—</span>;
-  return <span className={`badge ${STATUS_TONE[status]}`}>{labelize(status)}</span>;
+  if (!status) return <span className="badge plain">New</span>;
+  return <span className={`badge ${STATUS_TONE[status]}`}>{STATUS_LABEL[status]}</span>;
 }
 
 export function StageBadge({ stage }: { stage: Stage | null | undefined }) {

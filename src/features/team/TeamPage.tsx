@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { MailPlus } from "lucide-react";
+import { MailPlus, RefreshCw } from "lucide-react";
 import { ROLE_LABEL } from "../../app/session";
-import { Alert, Loading, PageHeader } from "../../components/ui";
+import { Loading, PageHeader, useToast } from "../../components/ui";
 import { api } from "../../lib/api";
 import { errorMessage } from "../../lib/axios";
 import { initials } from "../../lib/format";
@@ -10,6 +10,7 @@ import type { Role } from "../../types/api";
 
 /** Admin: invite recruiters and hiring managers, see who is on the team. */
 export default function TeamPage() {
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"recruiter" | "hiring_manager">("recruiter");
   const members = useQuery({
@@ -19,11 +20,15 @@ export default function TeamPage() {
       return lists.flat();
     },
   });
-  const invite = useMutation({ mutationFn: () => api.invite(email.trim(), role), onSuccess: () => setEmail("") });
+  const invite = useMutation({
+    mutationFn: (args: { email: string; role: "recruiter" | "hiring_manager" }) => api.invite(args.email, args.role),
+    onSuccess: (res) => { setEmail(""); toast(res.message, "success"); void members.refetch(); },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    invite.mutate();
+    invite.mutate({ email: email.trim(), role });
   }
 
   return (
@@ -39,8 +44,7 @@ export default function TeamPage() {
               <option value="recruiter">Recruiter — finds and shortlists candidates</option>
               <option value="hiring_manager">Hiring manager — reviews shared candidates</option>
             </select></div>
-          {invite.isSuccess && <Alert tone="success">Invitation sent.</Alert>}
-          {invite.isError && <Alert tone="error">{errorMessage(invite.error)}</Alert>}
+          <p className="small muted">Inviting someone who hasn't accepted yet sends them a fresh link.</p>
           <div className="row" style={{ justifyContent: "flex-end" }}>
             <button className="btn btn-primary" disabled={invite.isPending}><MailPlus /> {invite.isPending ? "Sending…" : "Send invitation"}</button>
           </div>
@@ -56,12 +60,24 @@ export default function TeamPage() {
                     <td style={{ width: 44 }}><div className="avatar">{initials(m.name, m.email[0]?.toUpperCase())}</div></td>
                     <td><div className="cell-title">{m.name ?? "—"}</div><div className="cell-sub">{m.email}</div></td>
                     <td><span className="badge brand plain">{ROLE_LABEL[m.role]}</span></td>
+                    <td style={{ textAlign: "right" }}>
+                      {m.status === "invite_sent" ? (
+                        <div className="row" style={{ justifyContent: "flex-end" }}>
+                          <span className="badge amber">Invite not accepted</span>
+                          {m.role !== "admin" && (
+                            <button className="btn btn-sm" disabled={invite.isPending}
+                                    onClick={() => invite.mutate({ email: m.email, role: m.role as "recruiter" | "hiring_manager" })}>
+                              <RefreshCw /> Resend
+                            </button>
+                          )}
+                        </div>
+                      ) : <span className="badge green">Active</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="card-body small muted">People who haven't accepted their invitation yet aren't listed.</div>
         </div>
       </div>
     </>

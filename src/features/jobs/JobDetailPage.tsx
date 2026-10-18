@@ -40,7 +40,7 @@ export default function JobDetailPage() {
         subtitle={[j.category, j.location, j.work_mode].filter(Boolean).join(" · ") || undefined}
         actions={
           <>
-            <button className="btn" onClick={() => void openFile(`/api/v1/jobs/${id}/jd`)}><Download /> View JD</button>
+            <button className="btn" onClick={() => void openFile(`/api/v1/jobs/${id}/view`)}><Download /> View JD</button>
             {!editing && <button className="btn" onClick={() => setEditing(true)}><Pencil /> Edit</button>}
             {user.role === "recruiter" && (
               <Link className="btn btn-primary" to={`/jobs/${id}/shortlist`}><ListChecks /> Find candidates</Link>

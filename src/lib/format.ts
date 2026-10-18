@@ -61,6 +61,14 @@ export function describeAction(value: string | null | undefined): string {
   return ACTION_LABEL[value] ?? labelize(value);
 }
 
+export const STATUS_LABEL: Record<CandidateStatus, string> = {
+  sourced: "Matched",
+  shortlisted: "Shortlisted",
+  approved: "Approved",
+  rejected: "Rejected",
+  interview_scheduled: "Interview scheduled",
+};
+
 export const STATUS_TONE: Record<CandidateStatus, string> = {
   sourced: "",
   shortlisted: "blue",

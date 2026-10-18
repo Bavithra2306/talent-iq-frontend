@@ -64,19 +64,18 @@ export const api = {
   sources: async () => (await apiClient.get<SourceInfo[]>(`${v1}/sourcing/sources`)).data,
   startSourcing: async (sources: Record<string, unknown>[]) =>
     (await apiClient.post<{ batch_id: string }>(`${v1}/sourcing/runs`, { sources })).data,
-  sourcingStatus: async (id: string) => (await apiClient.get<BatchStatus>(`${v1}/sourcing/runs/${id}`)).data,
 
   // matching / shortlist
-  parseFilter: async (text: string) => (await apiClient.post<ParsedFilter>(`${v1}/shortlists/parse-filter`, { text })).data,
+  parseFilter: async (text: string) => (await apiClient.post<ParsedFilter>(`${v1}/shortlists/nl-filter`, { text })).data,
   runShortlist: async (jobId: string, filters: ShortlistFilters, topK: number) =>
-    (await apiClient.post<{ run_id: string }>(`${v1}/jobs/${jobId}/shortlist/run`, { filters, top_k: topK })).data,
+    (await apiClient.post<{ run_id: string }>(`${v1}/jobs/${jobId}/match`, { filters, top_k: topK })).data,
   runStatus: async (id: string) => (await apiClient.get<RunStatus>(`${v1}/shortlists/runs/${id}`)).data,
   shortlist: async (jobId: string, params: Params) =>
     (await apiClient.get<ShortlistList>(`${v1}/jobs/${jobId}/shortlist`, { params: clean(params) })).data,
   allShortlists: async (params: Params) =>
     (await apiClient.get<ShortlistList>(`${v1}/shortlists`, { params: clean(params) })).data,
   saveWeights: async (jobId: string, w: Weights) =>
-    (await apiClient.put<ShortlistList>(`${v1}/jobs/${jobId}/scoring-config`, { ...w, total_pct: 100 })).data,
+    (await apiClient.put<ShortlistList>(`${v1}/jobs/${jobId}/weights`, { ...w, total_pct: 100 })).data,
   setNotes: async (entryId: string, notes: string) =>
     (await apiClient.patch<ShortlistEntry>(`${v1}/shortlist-entries/${entryId}/notes`, { notes })).data,
   toggleShortlist: async (entryId: string, shortlisted: boolean) =>
@@ -84,7 +83,7 @@ export const api = {
   share: async (jobId: string, hiringManagerId: string, note: string) =>
     (await apiClient.post<{ shared: number; skipped: { entry_id: string; reason: string }[] }>(
       `${v1}/jobs/${jobId}/shortlist/share`, { hiring_manager_id: hiringManagerId, note: note || null })).data,
-  reviewHistory: async (jobId: string) => (await apiClient.get<ReviewEvent[]>(`${v1}/jobs/${jobId}/review-history`)).data,
+  reviewHistory: async (jobId: string) => (await apiClient.get<ReviewEvent[]>(`${v1}/jobs/${jobId}/history`)).data,
 
   // hiring manager review
   sharedWithMe: async (params: Params) => (await apiClient.get<ShortlistEntry[]>(`${v1}/review`, { params: clean(params) })).data,
@@ -92,9 +91,6 @@ export const api = {
     (await apiClient.post<ShortlistEntry>(`${v1}/review/${entryId}/decision`, { decision, comment: comment || null })).data,
   scheduleInterview: async (entryId: string) =>
     (await apiClient.post<ShortlistEntry>(`${v1}/review/${entryId}/schedule-interview`)).data,
-  shareBack: async (jobId: string, comment: string) =>
-    (await apiClient.post<{ approved: number; rejected: number; interview_scheduled: number; pending: number }>(
-      `${v1}/review/jobs/${jobId}/share-back`, { comment: comment || null })).data,
 
   // logs
   logs: async (params: Params) => (await apiClient.get<Paged<LogEntry>>(`${v1}/logs`, { params: clean(params) })).data,

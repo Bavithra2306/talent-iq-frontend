@@ -66,7 +66,7 @@ export default function SourcingPage() {
         <div className="card" style={{ marginBottom: 16 }}>
           <div className="card-header"><div><h2>Sourcing run</h2><p>Each source reports what it found, then the resumes are read like uploads.</p></div></div>
           <div className="card-body">
-            <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.sourcingStatus}
+            <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.batchStatus}
                            onFinished={() => void queryClient.invalidateQueries({ queryKey: ["candidates"] })} />
           </div>
         </div>

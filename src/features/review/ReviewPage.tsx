@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarCheck, Check, ClipboardCheck, Eye, FileText, Send, X } from "lucide-react";
+import { CalendarCheck, Check, ClipboardCheck, Eye, FileText, X } from "lucide-react";
 import {
   Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreRing, StatusBadge, useToast,
 } from "../../components/ui";
@@ -26,7 +26,6 @@ export default function ReviewPage() {
   const [status, setStatus] = useState("shortlisted");
   const [open, setOpen] = useState<ShortlistEntry | null>(null);
   const [rejecting, setRejecting] = useState<ShortlistEntry | null>(null);
-  const [sendingBack, setSendingBack] = useState<{ id: string; title: string } | null>(null);
 
   const all = useQuery({ queryKey: ["review", "all"], queryFn: () => api.sharedWithMe({}) });
   const entries = useQuery({ queryKey: ["review", jobId, status], queryFn: () => api.sharedWithMe({ job_id: jobId, status }) });
@@ -56,7 +55,7 @@ export default function ReviewPage() {
 
   return (
     <>
-      <PageHeader title="Review candidates" subtitle="Candidates that recruiters have shared with you. Approve or reject each one, then send your decisions back." />
+      <PageHeader title="Review candidates" subtitle="Candidates that recruiters have shared with you. Approve or reject each one — the recruiter sees your decision straight away." />
 
       {jobs.length > 0 && (
         <div className="grid grid-3" style={{ marginBottom: 16 }}>
@@ -69,7 +68,6 @@ export default function ReviewPage() {
                 <span className={`badge ${j.pending ? "amber" : "green"}`}>{j.pending ? `${j.pending} to review` : "All reviewed"}</span>
               </div>
               <div className="cell-sub" style={{ margin: "4px 0 10px" }}>{j.total} candidate(s) shared with you</div>
-              <button className="btn btn-sm" onClick={() => setSendingBack({ id, title: j.title })}><Send /> Send decisions to recruiter</button>
             </div>
           ))}
         </div>
@@ -130,7 +128,6 @@ export default function ReviewPage() {
         <RejectModal entry={rejecting} busy={decide.isPending} onClose={() => setRejecting(null)}
                      onConfirm={(comment) => decide.mutate({ entry: rejecting, decision: "rejected", comment })} />
       )}
-      {sendingBack && <SendBackModal job={sendingBack} onClose={() => setSendingBack(null)} />}
     </>
   );
 }
@@ -145,28 +142,6 @@ function RejectModal({ entry, busy, onClose, onConfirm }: {
              <button className="btn btn-danger" disabled={busy} onClick={() => onConfirm(comment)}>Reject</button></>}>
       <div className="field"><label htmlFor="why">Reason (optional, shared with the recruiter)</label>
         <textarea id="why" className="textarea" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="e.g. Needs more FastAPI experience" /></div>
-    </Modal>
-  );
-}
-
-function SendBackModal({ job, onClose }: { job: { id: string; title: string }; onClose: () => void }) {
-  const toast = useToast();
-  const [comment, setComment] = useState("");
-  const send = useMutation({
-    mutationFn: () => api.shareBack(job.id, comment),
-    onSuccess: (r) => {
-      toast(`Sent to recruiter: ${r.approved} approved, ${r.rejected} rejected, ${r.interview_scheduled} interview${r.interview_scheduled === 1 ? "" : "s"}${r.pending ? `, ${r.pending} still to review` : ""}.`, "success");
-      onClose();
-    },
-  });
-  return (
-    <Modal title={`Send decisions for “${job.title}”`} onClose={onClose}
-           footer={<><button className="btn" onClick={onClose}>Cancel</button>
-             <button className="btn btn-primary" disabled={send.isPending} onClick={() => send.mutate()}><Send /> Send to recruiter</button></>}>
-      <p className="muted">The recruiter sees your approvals, rejections and interviews straight away; this also sends them a summary.</p>
-      <div className="field"><label htmlFor="msg">Message (optional)</label>
-        <textarea id="msg" className="textarea" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="e.g. Two approved, please book interviews" /></div>
-      {send.isError && <Alert tone="error">{errorMessage(send.error)}</Alert>}
     </Modal>
   );
 }

@@ -3,8 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Search, Upload, Users, X } from "lucide-react";
 import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../components/ui";
 import { api, openFile } from "../../lib/api";
+import type { Candidate } from "../../types/api";
 import { errorMessage } from "../../lib/axios";
-import { formatDateTime, formatYears, labelize } from "../../lib/format";
+import { formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../lib/format";
 import BatchProgress from "./BatchProgress";
 
 const LIMIT = 20;
@@ -20,7 +21,7 @@ export default function CandidatesPage() {
   const [progress, setProgress] = useState(0);
   const [batchId, setBatchId] = useState<string | null>(storedBatch);
   const [rejected, setRejected] = useState<{ filename: string; reason: string }[]>([]);
-  const [filters, setFilters] = useState({ category: "", search: "", skill: "", location: "", min_experience: "", sort: "date_added", order: "desc" });
+  const [filters, setFilters] = useState({ category: "", search: "", skill: "", location: "", min_experience: "", status: "", sort: "date_added", order: "desc" });
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -122,6 +123,11 @@ export default function CandidatesPage() {
           <input className="input" placeholder="Location" value={filters.location} onChange={(e) => setFilter("location", e.target.value)} />
           <input className="input" style={{ minWidth: 110 }} type="number" min={0} placeholder="Min yrs"
                  value={filters.min_experience} onChange={(e) => setFilter("min_experience", e.target.value)} />
+          <select className="select" value={filters.status} onChange={(e) => setFilter("status", e.target.value)}>
+            <option value="">Any status</option>
+            <option value="new">New (not matched yet)</option>
+            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+          </select>
           <select className="select" value={`${filters.sort}:${filters.order}`}
                   onChange={(e) => { const [s, o] = e.target.value.split(":"); setFilters((f) => ({ ...f, sort: s, order: o })); }}>
             <option value="date_added:desc">Newest first</option>
@@ -136,7 +142,7 @@ export default function CandidatesPage() {
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Candidate</th><th>Category</th><th>Experience</th><th>Location</th><th>Top skills</th><th>Source</th><th>Added</th></tr></thead>
+              <thead><tr><th>Candidate</th><th>Category</th><th>Experience</th><th>Location</th><th>Top skills</th><th>Status by job</th><th>Source</th><th>Added</th></tr></thead>
               <tbody>
                 {list.data.items.map((c) => (
                   <tr key={c.id} className="clickable" onClick={() => setOpenId(c.id)}>
@@ -145,6 +151,7 @@ export default function CandidatesPage() {
                     <td>{formatYears(c.total_years_experience)}</td>
                     <td>{c.location ?? "—"}</td>
                     <td><div className="chips">{c.skills.slice(0, 3).map((s) => <span key={s} className="tag gray">{s}</span>)}{c.skills.length > 3 && <span className="muted small">+{c.skills.length - 3}</span>}</div></td>
+                    <td><JobStatuses items={c.job_statuses} /></td>
                     <td className="muted">{labelize(c.source_site ?? "upload")}</td>
                     <td className="muted">{formatDateTime(c.created_at)}</td>
                   </tr>
@@ -158,6 +165,22 @@ export default function CandidatesPage() {
 
       {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} />}
     </>
+  );
+}
+
+/** A candidate's status per job ("New" when not matched to any job yet). */
+function JobStatuses({ items, full }: { items: Candidate["job_statuses"]; full?: boolean }) {
+  if (!items.length) return <StatusBadge status={null} />;
+  const shown = full ? items : items.slice(0, 2);
+  return (
+    <div className="stack" style={{ gap: 4 }}>
+      {shown.map((s) => (
+        <div key={s.job_id} className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+          <StatusBadge status={s.status} /><span className="small muted" style={{ whiteSpace: "nowrap" }}>{s.job_title}</span>
+        </div>
+      ))}
+      {!full && items.length > 2 && <span className="small muted">+{items.length - 2} more jobs</span>}
+    </div>
   );
 }
 
@@ -178,7 +201,7 @@ function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
             <dt>Email</dt><dd>{c.email ?? "—"}</dd>
             <dt>Phone</dt><dd>{c.contact ?? "—"}</dd>
             <dt>Location</dt><dd>{c.location ?? "—"}</dd>
-            <dt>Status</dt><dd><StatusBadge status={c.status} /></dd>
+            <dt>Status</dt><dd><JobStatuses items={c.job_statuses} full /></dd>
             <dt>Source</dt><dd>{labelize(c.source_site ?? "upload")} · {c.file_name}</dd>
             <dt>Read by</dt><dd className="mono">{c.extraction_model ?? "—"}</dd>
           </dl>

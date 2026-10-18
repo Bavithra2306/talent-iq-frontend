@@ -5,7 +5,7 @@ import { ListChecks } from "lucide-react";
 import { Alert, Empty, Loading, PageHeader, ScoreBar, StatusBadge } from "../../components/ui";
 import { api } from "../../lib/api";
 import { errorMessage } from "../../lib/axios";
-import { formatYears, labelize } from "../../lib/format";
+import { formatYears, STATUS_LABEL } from "../../lib/format";
 
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
@@ -48,7 +48,7 @@ export default function ShortlistsPage() {
           </select>
           <select className="select" value={view.status} onChange={(e) => setView({ ...view, status: e.target.value })}>
             <option value="">All statuses</option>
-            {["sourced", "shortlisted", "approved", "rejected", "interview_scheduled"].map((s) => <option key={s} value={s}>{labelize(s)}</option>)}
+            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
           </select>
           <input className="input" type="number" min={0} max={100} placeholder="Min score" value={view.min_score} onChange={(e) => setView({ ...view, min_score: e.target.value })} />
           <select className="select" value={`${view.sort}:${view.order}`} onChange={(e) => { const [s, o] = e.target.value.split(":"); setView({ ...view, sort: s, order: o }); }}>

@@ -7,7 +7,7 @@ import {
 } from "../../components/ui";
 import { api, downloadFile, openFile } from "../../lib/api";
 import { errorMessage } from "../../lib/axios";
-import { describeAction, formatDateTime, formatYears, labelize } from "../../lib/format";
+import { describeAction, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../lib/format";
 import type { ParsedFilter, ShortlistEntry, ShortlistFilters, Stage, Weights } from "../../types/api";
 import EntryDetail from "./EntryDetail";
 
@@ -215,7 +215,7 @@ export default function JobShortlistPage() {
         <div className="toolbar">
           <select className="select" value={view.status} onChange={(e) => setView({ ...view, status: e.target.value })}>
             <option value="">All statuses</option>
-            {["sourced", "shortlisted", "approved", "rejected", "interview_scheduled"].map((s) => <option key={s} value={s}>{labelize(s)}</option>)}
+            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
           </select>
           <input className="input" type="number" min={0} max={100} placeholder="Min score" value={view.min_score} onChange={(e) => setView({ ...view, min_score: e.target.value })} />
           <input className="input" placeholder="Skill" value={view.skill} onChange={(e) => setView({ ...view, skill: e.target.value })} />
