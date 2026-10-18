@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ListChecks } from "lucide-react";
-import { Alert, Empty, Loading, PageHeader, ScoreBar, StatusBadge } from "../../components/ui";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import { formatYears, STATUS_LABEL } from "../../lib/format";
+import { FileText, ListChecks } from "lucide-react";
+import { Alert, Empty, Loading, PageHeader, ScoreBar, StatusBadge } from "../../../components/ui";
+import { api, openFile } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import { formatYears, STATUS_LABEL } from "../../../utils/format";
 
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
@@ -64,7 +64,7 @@ export default function ShortlistsPage() {
         {entries.data && entries.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Candidate</th><th>Job</th><th>Rank</th><th>Score</th><th>Status</th></tr></thead>
+              <thead><tr><th>Candidate</th><th>Job</th><th>Rank</th><th>Score</th><th>Status</th><th>Resume</th></tr></thead>
               <tbody>
                 {entries.data.items.map((e) => (
                   <tr key={e.id} className="clickable" onClick={() => navigate(`/jobs/${e.job_id}/shortlist`)}>
@@ -73,6 +73,9 @@ export default function ShortlistsPage() {
                     <td>{e.rank ?? "—"}</td>
                     <td style={{ minWidth: 150 }}><ScoreBar value={e.total_score} /></td>
                     <td><StatusBadge status={e.status} /></td>
+                    <td onClick={(ev) => ev.stopPropagation()}>
+                      <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${e.candidate_id}/resume`)}><FileText /> View</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

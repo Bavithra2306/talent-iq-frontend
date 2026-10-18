@@ -56,7 +56,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       await logoutRequest();
     } finally {
-      navigate(wasAdmin ? "/admin/login" : "/login", { replace: true });
+      navigate(wasAdmin ? "/internal" : "/login", { replace: true });
     }
   }
 

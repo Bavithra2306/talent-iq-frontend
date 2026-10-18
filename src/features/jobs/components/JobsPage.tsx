@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, Plus, Search } from "lucide-react";
-import { Alert, Empty, Loading, PageHeader, Pagination } from "../../components/ui";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import { formatDateTime } from "../../lib/format";
+import { Alert, Empty, Loading, PageHeader, Pagination } from "../../../components/ui";
+import { api } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import { formatDateTime } from "../../../utils/format";
 
 const LIMIT = 15;
 

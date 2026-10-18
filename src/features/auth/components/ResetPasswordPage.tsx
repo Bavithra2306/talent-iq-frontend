@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { resetPassword } from "../services/authService";
-import AuthLayout from "./AuthLayout";
+import AuthLayout from "../../../layouts/AuthLayout";
 
 export default function ResetPasswordPage() {
   const location = useLocation();

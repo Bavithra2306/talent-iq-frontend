@@ -3,12 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarCheck, Check, ClipboardCheck, Eye, FileText, X } from "lucide-react";
 import {
   Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreRing, StatusBadge, useToast,
-} from "../../components/ui";
-import { api, openFile } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import { formatYears } from "../../lib/format";
-import type { ShortlistEntry } from "../../types/api";
-import EntryDetail from "../shortlist/EntryDetail";
+} from "../../../components/ui";
+import { api, openFile } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import { formatYears } from "../../../utils/format";
+import type { ShortlistEntry } from "../../../types/api";
+import EntryDetail from "../../shortlist/components/EntryDetail";
 
 const TABS = [
   { value: "", label: "All" },

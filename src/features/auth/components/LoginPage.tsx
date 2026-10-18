@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { adminLogin, login } from "../services/authService";
-import AuthLayout from "./AuthLayout";
+import AuthLayout from "../../../layouts/AuthLayout";
 
 /** Sign-in page. With `admin`, it is the admin sign-in (only admins are accepted there). */
 export default function LoginPage({ admin = false }: { admin?: boolean }) {
@@ -106,7 +106,7 @@ export default function LoginPage({ admin = false }: { admin?: boolean }) {
       {admin ? (
         <p className="auth-note">Recruiter or hiring manager? <Link to="/login">Sign in here</Link></p>
       ) : (
-        <p className="auth-note">New here? Ask your admin to send you an invitation. · <Link to="/admin/login">Admin sign in</Link></p>
+        <p className="auth-note">New here? Ask your admin to send you an invitation. · <Link to="/internal">Admin sign in</Link></p>
       )}
     </AuthLayout>
   );

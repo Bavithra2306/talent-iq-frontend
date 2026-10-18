@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Save } from "lucide-react";
-import { ROLE_LABEL, useSession } from "../../app/session";
-import { Alert, PageHeader, useToast } from "../../components/ui";
-import { updateProfile } from "../auth/services/authService";
-import { errorMessage } from "../../lib/axios";
-import { formatDateTime, initials } from "../../lib/format";
+import { ROLE_LABEL, useSession } from "../../../app/session";
+import { Alert, PageHeader, useToast } from "../../../components/ui";
+import { updateProfile } from "../../auth/services/authService";
+import { errorMessage } from "../../../lib/axios";
+import { formatDateTime, initials } from "../../../utils/format";
 
 /** Everyone can update their own name, phone number and location. */
 export default function ProfilePage() {

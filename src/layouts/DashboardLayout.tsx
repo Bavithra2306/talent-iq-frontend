@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { ROLE_LABEL, useSession } from "../app/session";
-import { initials } from "../lib/format";
+import { initials } from "../utils/format";
 import type { Role } from "../types/api";
 
 interface NavItem {
@@ -35,7 +35,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: "Admin",
     items: [
       { to: "/team", label: "Team", icon: UserPlus, roles: ["admin"] },
-      { to: "/logs", label: "Activity log", icon: ScrollText, roles: ["admin", "recruiter", "hiring_manager"] },
+      { to: "/logs", label: "Activity log", icon: ScrollText, roles: ["admin", "recruiter"] },
     ],
   },
 ];

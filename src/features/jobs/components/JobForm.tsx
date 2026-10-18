@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { TagInput } from "../../components/ui";
-import type { JobInput, JobStatus } from "../../types/api";
+import { TagInput } from "../../../components/ui";
+import type { JobInput, JobStatus } from "../../../types/api";
 
 export const CATEGORIES = [
   "IT", "Medical", "Finance", "Engineering", "Education", "Sales & Marketing", "HR", "Legal",

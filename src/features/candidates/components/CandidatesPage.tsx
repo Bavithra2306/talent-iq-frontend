@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Search, Upload, Users, X } from "lucide-react";
-import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../components/ui";
-import { api, openFile } from "../../lib/api";
-import type { Candidate } from "../../types/api";
-import { errorMessage } from "../../lib/axios";
-import { formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../lib/format";
+import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
+import { api, openFile } from "../../../services/api";
+import type { Candidate } from "../../../types/api";
+import { errorMessage } from "../../../lib/axios";
+import { formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
 import BatchProgress from "./BatchProgress";
 
 const LIMIT = 20;
@@ -142,7 +142,7 @@ export default function CandidatesPage() {
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Candidate</th><th>Category</th><th>Experience</th><th>Location</th><th>Top skills</th><th>Status by job</th><th>Source</th><th>Added</th></tr></thead>
+              <thead><tr><th>Candidate</th><th>Category</th><th>Experience</th><th>Location</th><th>Top skills</th><th>Status by job</th><th>Source</th><th>Added</th><th>Resume</th></tr></thead>
               <tbody>
                 {list.data.items.map((c) => (
                   <tr key={c.id} className="clickable" onClick={() => setOpenId(c.id)}>
@@ -154,6 +154,9 @@ export default function CandidatesPage() {
                     <td><JobStatuses items={c.job_statuses} /></td>
                     <td className="muted">{labelize(c.source_site ?? "upload")}</td>
                     <td className="muted">{formatDateTime(c.created_at)}</td>
+                    <td onClick={(ev) => ev.stopPropagation()}>
+                      <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${c.id}/resume`)}><FileText /> View</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

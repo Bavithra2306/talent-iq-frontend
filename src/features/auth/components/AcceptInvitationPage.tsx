@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useAcceptInvitation } from "../queries/authQueries";
-import AuthLayout from "./AuthLayout";
+import AuthLayout from "../../../layouts/AuthLayout";
 
 export default function AcceptInvitationPage() {
   const [password, setPassword] = useState("");

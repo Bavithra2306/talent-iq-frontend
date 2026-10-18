@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword } from "../services/authService";
-import AuthLayout from "./AuthLayout";
+import AuthLayout from "../../../layouts/AuthLayout";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");

@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { MailPlus, RefreshCw } from "lucide-react";
-import { ROLE_LABEL } from "../../app/session";
-import { Loading, PageHeader, useToast } from "../../components/ui";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import { initials } from "../../lib/format";
-import type { Role } from "../../types/api";
+import { ROLE_LABEL } from "../../../app/session";
+import { Loading, PageHeader, useToast } from "../../../components/ui";
+import { api } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import { initials } from "../../../utils/format";
+import type { Role } from "../../../types/api";
 
 /** Admin: invite recruiters and hiring managers, see who is on the team. */
 export default function TeamPage() {
@@ -41,8 +41,8 @@ export default function TeamPage() {
             <input id="email" className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" /></div>
           <div className="field"><label htmlFor="role">Role</label>
             <select id="role" className="select" value={role} onChange={(e) => setRole(e.target.value as typeof role)}>
-              <option value="recruiter">Recruiter — finds and shortlists candidates</option>
-              <option value="hiring_manager">Hiring manager — reviews shared candidates</option>
+              <option value="recruiter">Recruiter</option>
+              <option value="hiring_manager">Hiring manager</option>
             </select></div>
           <p className="small muted">Inviting someone who hasn't accepted yet sends them a fresh link.</p>
           <div className="row" style={{ justifyContent: "flex-end" }}>
@@ -63,7 +63,7 @@ export default function TeamPage() {
                     <td style={{ textAlign: "right" }}>
                       {m.status === "invite_sent" ? (
                         <div className="row" style={{ justifyContent: "flex-end" }}>
-                          <span className="badge amber">Invite not accepted</span>
+                          <span className="badge amber">Invite sent</span>
                           {m.role !== "admin" && (
                             <button className="btn btn-sm" disabled={invite.isPending}
                                     onClick={() => invite.mutate({ email: m.email, role: m.role as "recruiter" | "hiring_manager" })}>
@@ -71,7 +71,9 @@ export default function TeamPage() {
                             </button>
                           )}
                         </div>
-                      ) : <span className="badge green">Active</span>}
+                      ) : m.status === "accepted"
+                        ? <span className="badge brand plain" title="Password set, not signed in yet">Accepted</span>
+                        : <span className="badge green">Active</span>}
                     </td>
                   </tr>
                 ))}

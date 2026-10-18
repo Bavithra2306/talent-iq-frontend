@@ -1,4 +1,4 @@
-import { apiClient } from "./axios";
+import { apiClient } from "../lib/axios";
 import type {
   BatchStatus, Candidate, CandidateDetail, DirectoryUser, EmbeddingQuota, Job,
   JobExtractResponse, JobInput, LogEntry, Paged, ParsedFilter, ReviewEvent, Role, RunStatus,

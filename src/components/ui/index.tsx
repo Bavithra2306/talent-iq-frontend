@@ -2,8 +2,8 @@ import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode,
 } from "react";
 import { AlertCircle, CheckCircle2, Circle, Info, Inbox, Loader2, UploadCloud, X, XCircle } from "lucide-react";
-import { describeAction, formatTime, friendlyDetails, labelize, STAGE_TONE, STATUS_LABEL, STATUS_TONE } from "../lib/format";
-import type { CandidateStatus, PipelineEvent, Stage } from "../types/api";
+import { describeAction, formatTime, friendlyDetails, labelize, STAGE_TONE, STATUS_LABEL, STATUS_TONE } from "../../utils/format";
+import type { CandidateStatus, PipelineEvent, Stage } from "../../types/api";
 
 // ---------- layout bits ----------
 

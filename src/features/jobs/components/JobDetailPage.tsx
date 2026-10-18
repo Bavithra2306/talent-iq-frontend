@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, ListChecks, Pencil } from "lucide-react";
-import { useSession } from "../../app/session";
-import { Alert, Loading, PageHeader, useToast } from "../../components/ui";
-import { api, openFile } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import { formatDateTime } from "../../lib/format";
-import type { JobInput } from "../../types/api";
+import { useSession } from "../../../app/session";
+import { Alert, Loading, PageHeader, useToast } from "../../../components/ui";
+import { api, openFile } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import { formatDateTime } from "../../../utils/format";
+import type { JobInput } from "../../../types/api";
 import JobForm, { EMPTY_JOB } from "./JobForm";
 
 export default function JobDetailPage() {

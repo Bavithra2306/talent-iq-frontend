@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { FileText, Save } from "lucide-react";
-import { Alert, ScoreBar, ScoreRing, StatusBadge } from "../../components/ui";
-import { formatYears } from "../../lib/format";
-import type { ShortlistEntry, SkillMatch } from "../../types/api";
+import { Alert, ScoreBar, ScoreRing, StatusBadge } from "../../../components/ui";
+import { formatYears } from "../../../utils/format";
+import type { ShortlistEntry, SkillMatch } from "../../../types/api";
 
 const LEVEL: Record<number, { label: string; tone: string }> = {
   100: { label: "Has it", tone: "green" },

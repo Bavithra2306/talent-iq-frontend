@@ -2,10 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, ClipboardCheck, Globe, ListChecks, Plus, Upload, Users } from "lucide-react";
 import type { ReactNode } from "react";
-import { useSession } from "../../app/session";
-import { Alert, Loading, PageHeader, ScoreBar, StageBadge, StatusBadge } from "../../components/ui";
-import { api } from "../../lib/api";
-import { describeAction, describeArea, formatDateTime, formatYears } from "../../lib/format";
+import { useSession } from "../../../app/session";
+import { Alert, Loading, PageHeader, ScoreBar, StageBadge, StatusBadge } from "../../../components/ui";
+import { api } from "../../../services/api";
+import { describeAction, describeArea, formatDateTime, formatYears } from "../../../utils/format";
 
 function Stat({ label, value, hint, icon }: { label: string; value: ReactNode; hint?: string; icon: ReactNode }) {
   return (
@@ -144,7 +144,6 @@ function ManagerHome() {
           </div>
         )}
       </div>
-      <RecentActivity />
     </div>
   );
 }

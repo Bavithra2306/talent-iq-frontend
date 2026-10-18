@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { Alert, StageTimeline } from "../../components/ui";
-import type { BatchStatus, Stage } from "../../types/api";
+import { Alert, StageTimeline } from "../../../components/ui";
+import type { BatchStatus, Stage } from "../../../types/api";
 
 const STAGES: Stage[] = ["created", "collecting", "reading"];
 

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, History, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2 } from "lucide-react";
+import { History, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2, FileText } from "lucide-react";
 import {
   Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreBar, StageTimeline, StatusBadge, TagInput, useToast,
-} from "../../components/ui";
-import { api, downloadFile, openFile } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import { describeAction, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../lib/format";
-import type { ParsedFilter, ShortlistEntry, ShortlistFilters, Stage, Weights } from "../../types/api";
+} from "../../../components/ui";
+import { api, openFile } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import { describeAction, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
+import type { ParsedFilter, ShortlistEntry, ShortlistFilters, Stage, Weights } from "../../../types/api";
 import EntryDetail from "./EntryDetail";
 
 const RUN_STAGES: Stage[] = ["created", "collecting", "reading", "scoring", "shortlisted"];
@@ -98,8 +98,6 @@ export default function JobShortlistPage() {
         actions={
           <>
             <button className="btn" onClick={() => setHistory(true)}><History /> Review history</button>
-            <button className="btn" onClick={() => void downloadFile(`/api/v1/jobs/${id}/shortlist/export`, { format: "xlsx", scope: "shortlisted" }, "shortlist.xlsx")}><Download /> Excel</button>
-            <button className="btn" onClick={() => void downloadFile(`/api/v1/jobs/${id}/shortlist/export`, { format: "csv", scope: "shortlisted" }, "shortlist.csv")}><Download /> CSV</button>
             <button className="btn btn-primary" disabled={!shortlisted} onClick={() => setSharing(true)}><Send /> Share with hiring manager</button>
           </>
         }
@@ -237,7 +235,7 @@ export default function JobShortlistPage() {
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>#</th><th>Candidate</th><th>Total</th><th>Skills</th><th>Role</th><th>Experience</th><th>Education</th><th>Status</th><th title="In final shortlist">Shortlist</th></tr></thead>
+              <thead><tr><th>#</th><th>Candidate</th><th>Total</th><th>Skills</th><th>Role</th><th>Experience</th><th>Education</th><th>Status</th><th title="In final shortlist">Shortlist</th><th>Resume</th></tr></thead>
               <tbody>
                 {list.data.items.map((e) => {
                   const locked = Boolean(e.shared_to) || !["sourced", "shortlisted"].includes(e.status);
@@ -260,6 +258,9 @@ export default function JobShortlistPage() {
                                 onClick={() => toggle.mutate({ entryId: e.id, on: e.status !== "shortlisted" })}>
                           <Star />
                         </button>
+                      </td>
+                      <td onClick={(ev) => ev.stopPropagation()}>
+                        <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${e.candidate_id}/resume`)}><FileText /> View</button>
                       </td>
                     </tr>
                   );

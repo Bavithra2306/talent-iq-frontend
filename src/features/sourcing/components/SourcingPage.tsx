@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Code2, Database, Globe, Link2, Play } from "lucide-react";
 import type { ComponentType } from "react";
-import { Alert, Loading, PageHeader } from "../../components/ui";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import type { SourceInfo } from "../../types/api";
-import BatchProgress from "../candidates/BatchProgress";
-import { CATEGORIES } from "../jobs/JobForm";
+import { Alert, Loading, PageHeader } from "../../../components/ui";
+import { api } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import type { SourceInfo } from "../../../types/api";
+import BatchProgress from "../../candidates/components/BatchProgress";
+import { CATEGORIES } from "../../jobs/components/JobForm";
 
 type SourceType = SourceInfo["type"];
 const ICONS: Record<SourceType, ComponentType<{ size?: number }>> = {

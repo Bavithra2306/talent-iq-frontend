@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, PenLine, Sparkles } from "lucide-react";
-import { Alert, FileDrop, PageHeader, useToast } from "../../components/ui";
-import { api } from "../../lib/api";
-import { errorMessage } from "../../lib/axios";
-import type { JobExtractResponse, JobInput } from "../../types/api";
+import { Alert, FileDrop, PageHeader, useToast } from "../../../components/ui";
+import { api } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
+import type { JobExtractResponse, JobInput } from "../../../types/api";
 import JobForm, { EMPTY_JOB } from "./JobForm";
 
 export default function JobNewPage() {
