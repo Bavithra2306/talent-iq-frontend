@@ -36,9 +36,11 @@ export default function SourcingPage() {
   const [selected, setSelected] = useState<Set<SourceType>>(new Set(["huggingface"]));
   const [opts, setOpts] = useState<Options>(DEFAULTS);
   const [batchId, setBatchId] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState("");
+  const hasKeyword = keyword.trim().length >= 2;
 
   const run = useMutation({
-    mutationFn: () => api.startSourcing(buildRequest(selected, opts)),
+    mutationFn: () => api.startSourcing(buildRequest(selected, opts), hasKeyword ? keyword.trim() : undefined),
     onSuccess: (r) => setBatchId(r.batch_id),
   });
 
@@ -61,6 +63,18 @@ export default function SourcingPage() {
         </button>}
       />
       {run.isError && <div style={{ marginBottom: 16 }}><Alert tone="error">{errorMessage(run.error)}</Alert></div>}
+
+      <div className="card card-pad stack" style={{ marginBottom: 16 }}>
+        <div className="field">
+          <label htmlFor="keyword">What kind of candidates?</label>
+          <input id="keyword" className="input" value={keyword} onChange={(e) => setKeyword(e.target.value)}
+                 placeholder="e.g. software engineer, python developer, nurse" />
+          <span className="hint">
+            One keyword for GitHub, Stack Overflow, Hugging Face and Kaggle. Leave it empty to set each source yourself below.
+            GitHub and Stack Overflow only have developers, so they are skipped for other fields.
+          </span>
+        </div>
+      </div>
 
       {batchId && (
         <div className="card" style={{ marginBottom: 16 }}>

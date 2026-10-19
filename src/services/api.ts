@@ -62,8 +62,8 @@ export const api = {
 
   // sourcing
   sources: async () => (await apiClient.get<SourceInfo[]>(`${v1}/sourcing/sources`)).data,
-  startSourcing: async (sources: Record<string, unknown>[]) =>
-    (await apiClient.post<{ batch_id: string }>(`${v1}/sourcing/runs`, { sources })).data,
+  startSourcing: async (sources: Record<string, unknown>[], keyword?: string) =>
+    (await apiClient.post<{ batch_id: string }>(`${v1}/sourcing/runs`, { sources, keyword: keyword || null })).data,
 
   // matching / shortlist
   parseFilter: async (text: string) => (await apiClient.post<ParsedFilter>(`${v1}/shortlists/nl-filter`, { text })).data,
