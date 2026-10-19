@@ -37,7 +37,7 @@ export default function JobNewPage() {
   return (
     <>
       <PageHeader title="New job" crumb={<Link to="/jobs">Jobs</Link>}
-                  subtitle="Upload a job description and let AI fill in the fields for you to check, or type the job in." />
+                  subtitle="Upload a job description or type the job in." />
       <div className="tabs">
         <button className={`tab ${mode === "upload" ? "active" : ""}`} onClick={() => setMode("upload")}>
           <FileText size={15} style={{ verticalAlign: -2 }} /> Upload job description
@@ -58,7 +58,7 @@ export default function JobNewPage() {
             setTooBig(null);
             extract.mutate(file);
           }}
-                    hint="PDF, scanned PDF, Word or a JPG/PNG photo, up to 10 MB. AI checks that it is a job description and fills in the fields." />
+                    hint="PDF, Word, scanned PDF or a photo (JPG, PNG). Up to 10 MB." />
           {tooBig && <Alert tone="error">{tooBig} is larger than {MAX_JD_MB} MB. Please choose a smaller file.</Alert>}
           {extract.isPending && <Alert><span className="spinner" /> Reading the job description and filling in the fields… (5–30 s)</Alert>}
           {extract.isError && <Alert tone="error">{errorMessage(extract.error)}</Alert>}
@@ -70,7 +70,7 @@ export default function JobNewPage() {
           <div className="card-header">
             <div>
               <h2><Sparkles size={17} style={{ verticalAlign: -2, color: "var(--brand-600)" }} /> Review the extracted fields</h2>
-              <p>AI filled these in from the PDF. Correct anything that is wrong, then save.</p>
+              <p>Check these details, correct anything that is wrong, then save.</p>
             </div>
             <button className="btn btn-sm" onClick={() => setExtracted(null)}>Upload another</button>
           </div>

@@ -111,7 +111,7 @@ export default function CandidatesPage() {
         </div>
       </div>
 
-      <ReviewQueue />
+      <ReviewQueue origin="upload" />
 
       <div className="card">
         <div className="toolbar" style={{ display: "block" }}>

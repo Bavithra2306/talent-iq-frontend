@@ -7,6 +7,7 @@ import { api } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import type { SourceInfo } from "../../../types/api";
 import BatchProgress from "../../candidates/components/BatchProgress";
+import ReviewQueue from "../../candidates/components/ReviewQueue";
 import { CATEGORIES } from "../../jobs/components/JobForm";
 
 type SourceType = SourceInfo["type"];
@@ -81,10 +82,15 @@ export default function SourcingPage() {
           <div className="card-header"><div><h2>Sourcing run</h2><p>Each source reports what it found, then the resumes are read like uploads.</p></div></div>
           <div className="card-body">
             <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.batchStatus}
-                           onFinished={() => void queryClient.invalidateQueries({ queryKey: ["candidates"] })} />
+                           onFinished={() => {
+                             void queryClient.invalidateQueries({ queryKey: ["candidates"] });
+                             void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
+                           }} />
           </div>
         </div>
       )}
+
+      <ReviewQueue origin="sourcing" />
 
       {catalog.isLoading && <Loading />}
       {catalog.isError && <Alert tone="error">{errorMessage(catalog.error)}</Alert>}

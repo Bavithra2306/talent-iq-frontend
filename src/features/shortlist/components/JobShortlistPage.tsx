@@ -136,7 +136,7 @@ export default function JobShortlistPage() {
         <div className="card">
           <div className="card-header"><div><h2>Matching</h2>
             <p>Compares every {job.data.category ?? ""} resume with this job description. Experience and education are scored by rules;
-               resumes that are at least 75% similar are then scored by AI on skills and role.</p></div></div>
+               the most similar resumes (75% or more; 60% or 50% if none reach it) are then scored on skills and role.</p></div></div>
           <div className="card-body stack">
             <div className="row" style={{ justifyContent: "flex-start" }}>
               <button className="btn btn-primary" disabled={running || !job.data.skills?.length} onClick={() => start.mutate()}>
@@ -150,15 +150,15 @@ export default function JobShortlistPage() {
                 <StageTimeline stages={RUN_STAGES} current={s.stage} finished={s.finished} labels={STAGE_NAMES} />
                 <div className="row small">
                   {s.considered !== null && <span className="badge plain">{s.considered} in {job.data.category ?? "the category"}</span>}
-                  {s.pool !== null && <span className="badge green">{s.pool} at least 75% similar</span>}
-                  {Boolean(s.below_threshold) && <span className="badge plain">{s.below_threshold} below 75%</span>}
+                  {s.pool !== null && s.threshold != null && <span className="badge green">{s.pool} at least {Math.round(s.threshold * 100)}% similar</span>}
+                  {Boolean(s.below_threshold) && s.threshold != null && <span className="badge plain">{s.below_threshold} below {Math.round(s.threshold * 100)}%</span>}
                   {Boolean(s.not_indexed) && <span className="badge amber">{s.not_indexed} not searchable yet</span>}
                   {s.scored !== null && <span className="badge plain">{s.scored} scored</span>}
                   {Boolean(s.from_cache) && <span className="badge plain">{s.from_cache} reused</span>}
                   {Boolean(s.failed) && <span className="badge red">{s.failed} failed</span>}
                   {s.seconds !== null && <span className="badge plain">{s.seconds}s</span>}
                 </div>
-                {s.note && <Alert tone="warn">{s.note}</Alert>}
+                {s.note && <Alert tone={s.pool ? "info" : "warn"}>{s.note}</Alert>}
                 {Boolean(s.not_indexed) && s.finished && (
                   <Alert tone="warn">{s.not_indexed} resume(s) are still being added to search and were left out. Run matching again later to include them.</Alert>
                 )}
