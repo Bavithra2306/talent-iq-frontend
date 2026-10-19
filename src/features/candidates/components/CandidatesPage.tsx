@@ -5,7 +5,8 @@ import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, Status
 import { api, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
 import { errorMessage } from "../../../lib/axios";
-import { formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
+import { MAX_RESUME_FILES, MAX_UPLOAD_MB } from "../../../config/constants";
+import { formatBytes, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
 import BatchProgress from "./BatchProgress";
 
 const LIMIT = 20;
@@ -44,9 +45,12 @@ export default function CandidatesPage() {
 
   const setFilter = (key: keyof typeof filters, value: string) => { setFilters((f) => ({ ...f, [key]: value })); setOffset(0); };
   const addFiles = (incoming: File[]) => {
-    const ok = incoming.filter((f) => /\.(pdf|docx)$/i.test(f.name));
-    setFiles((prev) => [...prev, ...ok.filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size))]);
+    setFiles((prev) => [...prev, ...incoming.filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size))]);
   };
+  // The server checks what each file really is; here only the size of the whole upload is checked.
+  const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+  const tooMany = files.length > MAX_RESUME_FILES;
+  const tooBig = totalBytes > MAX_UPLOAD_MB * 1024 * 1024;
 
   return (
     <>
@@ -54,9 +58,10 @@ export default function CandidatesPage() {
 
       <div className="grid grid-2" style={{ marginBottom: 16 }}>
         <div className="card">
-          <div className="card-header"><div><h2>Upload resumes</h2><p>PDF, DOCX or scanned PDF — up to 200 files at once.</p></div></div>
+          <div className="card-header"><div><h2>Upload resumes</h2><p>PDF, DOCX or scanned PDF — up to 150 files at once, or one zip file.</p></div></div>
           <div className="card-body stack">
-            <FileDrop accept=".pdf,.docx" multiple onFiles={addFiles} hint="Duplicates are detected and skipped." />
+            <FileDrop multiple folders onFiles={addFiles}
+                      hint="Drop files, a folder or one zip. Each file is checked; other file types are skipped, duplicates too." />
             {files.length > 0 && (
               <>
                 <div className="file-list">
@@ -68,13 +73,15 @@ export default function CandidatesPage() {
                   ))}
                 </div>
                 <div className="spread">
-                  <span className="muted">{files.length} file(s) selected</span>
-                  <button className="btn btn-primary" disabled={upload.isPending} onClick={() => upload.mutate()}>
+                  <span className="muted">{files.length} file(s) · {formatBytes(totalBytes)}</span>
+                  <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
                     <Upload /> {upload.isPending ? `Uploading ${progress}%` : "Upload & process"}
                   </button>
                 </div>
               </>
             )}
+            {tooMany && <Alert tone="warn">You chose {files.length} files. Please upload at most {MAX_RESUME_FILES} at a time.</Alert>}
+            {tooBig && <Alert tone="warn">These files add up to {formatBytes(totalBytes)}. Please upload at most {MAX_UPLOAD_MB} MB at a time.</Alert>}
             {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
             {rejected.length > 0 && (
               <Alert tone="warn">

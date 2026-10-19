@@ -160,3 +160,10 @@ export function friendlyDetails(details: Record<string, unknown> | string | null
     })
     .join(" · ");
 }
+
+/** 1536 -> "1.5 KB", 3_500_000 -> "3.3 MB". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

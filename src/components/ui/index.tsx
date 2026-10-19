@@ -172,26 +172,65 @@ export function TagInput({ value, onChange, placeholder }: {
   );
 }
 
-export function FileDrop({ accept, multiple, onFiles, hint }: {
-  accept: string; multiple?: boolean; onFiles: (files: File[]) => void; hint?: string;
+/** Collect every file from a dropped item, going through folders and subfolders. */
+async function filesFromEntry(entry: FileSystemEntry): Promise<File[]> {
+  if (entry.isFile) {
+    return new Promise((resolve) => (entry as FileSystemFileEntry).file((f) => resolve([f]), () => resolve([])));
+  }
+  const reader = (entry as FileSystemDirectoryEntry).createReader();
+  const children: FileSystemEntry[] = [];
+  // readEntries returns results in chunks until it returns an empty list.
+  for (;;) {
+    const chunk = await new Promise<FileSystemEntry[]>((resolve) => reader.readEntries(resolve, () => resolve([])));
+    if (chunk.length === 0) break;
+    children.push(...chunk);
+  }
+  return (await Promise.all(children.map(filesFromEntry))).flat();
+}
+
+async function filesFromDrop(dt: DataTransfer): Promise<File[]> {
+  const entries = Array.from(dt.items ?? [])
+    .map((item) => item.webkitGetAsEntry?.())
+    .filter((e): e is FileSystemEntry => Boolean(e));
+  if (entries.length === 0) return Array.from(dt.files);
+  return (await Promise.all(entries.map(filesFromEntry))).flat();
+}
+
+/** Drop zone. Files are not filtered by name here: the server checks what each file really is. */
+export function FileDrop({ accept, multiple, folders, onFiles, hint }: {
+  accept?: string; multiple?: boolean; folders?: boolean; onFiles: (files: File[]) => void; hint?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const folderInput = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   return (
-    <div
-      className={`dropzone ${over ? "over" : ""}`}
-      onClick={() => input.current?.click()}
-      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(e) => { e.preventDefault(); setOver(false); onFiles(Array.from(e.dataTransfer.files)); }}
-      role="button" tabIndex={0}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && input.current?.click()}
-    >
-      <UploadCloud />
-      <strong>Drop {multiple ? "files" : "a file"} here or click to browse</strong>
-      {hint && <div className="muted small" style={{ marginTop: 4 }}>{hint}</div>}
-      <input ref={input} type="file" accept={accept} multiple={multiple} hidden
-             onChange={(e) => { onFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
+    <div>
+      <div
+        className={`dropzone ${over ? "over" : ""}`}
+        onClick={() => input.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault(); setOver(false);
+          void (folders ? filesFromDrop(e.dataTransfer) : Promise.resolve(Array.from(e.dataTransfer.files))).then(onFiles);
+        }}
+        role="button" tabIndex={0}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && input.current?.click()}
+      >
+        <UploadCloud />
+        <strong>Drop {multiple ? (folders ? "files or a folder" : "files") : "a file"} here or click to browse</strong>
+        {hint && <div className="muted small" style={{ marginTop: 4 }}>{hint}</div>}
+        <input ref={input} type="file" accept={accept} multiple={multiple} hidden
+               onChange={(e) => { onFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
+      </div>
+      {folders && (
+        <div style={{ marginTop: 8 }}>
+          <button type="button" className="btn btn-sm" onClick={() => folderInput.current?.click()}>Choose a folder</button>
+          <input ref={folderInput} type="file" hidden multiple
+                 {...({ webkitdirectory: "" } as Record<string, string>)}
+                 onChange={(e) => { onFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
+        </div>
+      )}
     </div>
   );
 }

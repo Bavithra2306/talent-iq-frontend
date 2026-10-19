@@ -47,6 +47,7 @@ export function errorMessage(error: unknown, fallback = "Something went wrong. P
     const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail) && detail[0]?.msg) return String(detail[0].msg).replace(/^Value error, /, "");
+    if (error.response?.status === 413) return "This upload is too large. Please upload fewer or smaller files at a time.";
     if (!error.response) return "Cannot reach the server. Check that the services are running.";
   }
   return fallback;

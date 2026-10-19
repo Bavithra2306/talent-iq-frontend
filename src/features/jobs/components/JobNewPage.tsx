@@ -5,6 +5,7 @@ import { FileText, PenLine, Sparkles } from "lucide-react";
 import { Alert, FileDrop, PageHeader, useToast } from "../../../components/ui";
 import { api } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
+import { MAX_JD_MB } from "../../../config/constants";
 import type { JobExtractResponse, JobInput } from "../../../types/api";
 import JobForm, { EMPTY_JOB } from "./JobForm";
 
@@ -13,6 +14,7 @@ export default function JobNewPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<"upload" | "form">("upload");
+  const [tooBig, setTooBig] = useState<string | null>(null);
   const [extracted, setExtracted] = useState<JobExtractResponse | null>(null);
 
   const extract = useMutation({ mutationFn: (file: File) => api.extractJd(file), onSuccess: setExtracted });
@@ -38,7 +40,7 @@ export default function JobNewPage() {
                   subtitle="Upload a JD and let AI fill in the fields for you to check, or type the job in." />
       <div className="tabs">
         <button className={`tab ${mode === "upload" ? "active" : ""}`} onClick={() => setMode("upload")}>
-          <FileText size={15} style={{ verticalAlign: -2 }} /> Upload JD (PDF)
+          <FileText size={15} style={{ verticalAlign: -2 }} /> Upload JD
         </button>
         <button className={`tab ${mode === "form" ? "active" : ""}`} onClick={() => setMode("form")}>
           <PenLine size={15} style={{ verticalAlign: -2 }} /> Type it in
@@ -49,8 +51,15 @@ export default function JobNewPage() {
 
       {mode === "upload" && !extracted && (
         <div className="card card-pad stack">
-          <FileDrop accept=".pdf,application/pdf" onFiles={(files) => files[0] && extract.mutate(files[0])}
-                    hint="PDF only, up to 10 MB. AI checks that it is a JD and extracts the fields." />
+          <FileDrop onFiles={(files) => {
+            const file = files[0];
+            if (!file) return;
+            if (file.size > MAX_JD_MB * 1024 * 1024) { setTooBig(file.name); return; }
+            setTooBig(null);
+            extract.mutate(file);
+          }}
+                    hint="PDF, scanned PDF, Word or a JPG/PNG photo, up to 10 MB. AI checks that it is a JD and extracts the fields." />
+          {tooBig && <Alert tone="error">{tooBig} is larger than {MAX_JD_MB} MB. Please choose a smaller file.</Alert>}
           {extract.isPending && <Alert><span className="spinner" /> Reading the JD and extracting fields… (5–30 s)</Alert>}
           {extract.isError && <Alert tone="error">{errorMessage(extract.error)}</Alert>}
         </div>
