@@ -76,6 +76,13 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
         </div>
       )}
 
+      {e.reason?.length ? (
+        <div>
+          <h3 style={{ marginBottom: 8 }}>Why this score</h3>
+          <ul className="reasons" style={{ fontSize: 14 }}>{e.reason.map((r) => <li key={r}>{r}</li>)}</ul>
+        </div>
+      ) : null}
+
       {e.summary ? (
         <div className="explain">
           <strong>Why this candidate</strong>
@@ -88,7 +95,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
             </div>
           ) : null}
         </div>
-      ) : <Alert>An AI explanation is written for shortlisted candidates.</Alert>}
+      ) : <Alert>An AI summary is written once the candidate is shortlisted.</Alert>}
 
       <SkillRows title="Required skills" items={e.skills?.required ?? []} />
       <SkillRows title="Nice-to-have skills" items={e.skills?.nice ?? []} />

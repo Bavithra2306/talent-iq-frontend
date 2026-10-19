@@ -42,7 +42,7 @@ export default function JobsPage() {
         {jobs.isLoading && <Loading />}
         {jobs.isError && <div className="card-body"><Alert tone="error">{errorMessage(jobs.error)}</Alert></div>}
         {jobs.data && jobs.data.items.length === 0 && (
-          <Empty title="No jobs yet" icon={<Briefcase />}>Create a job by uploading a JD PDF or typing it in.</Empty>
+          <Empty title="No jobs yet" icon={<Briefcase />}>Create a job by uploading a job description or typing it in.</Empty>
         )}
         {jobs.data && jobs.data.items.length > 0 && (
           <div className="table-wrap">

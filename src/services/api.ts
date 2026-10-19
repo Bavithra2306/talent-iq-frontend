@@ -1,12 +1,12 @@
 import { apiClient } from "../lib/axios";
 import type {
   BatchStatus, Candidate, CandidateDetail, DirectoryUser, EmbeddingQuota, Job,
-  JobExtractResponse, JobInput, LogEntry, Paged, ParsedFilter, ReviewEvent, Role, RunStatus,
+  JobExtractResponse, JobInput, LogEntry, Paged, ParsedFilter, ReviewEvent, ReviewFile, Role, RunStatus,
   ShortlistEntry, ShortlistFilters, ShortlistList, SourceInfo, UploadResponse, Weights,
 } from "../types/api";
 
 const v1 = "/api/v1";
-type Params = Record<string, string | number | boolean | null | undefined>;
+type Params = Record<string, string | number | boolean | string[] | null | undefined>;
 
 function clean(params: Params): Params {
   return Object.fromEntries(Object.entries(params).filter(([, v]) => v !== "" && v !== null && v !== undefined));
@@ -53,6 +53,10 @@ export const api = {
       onUploadProgress: (e) => onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0),
     })).data;
   },
+  reviewFiles: async () => (await apiClient.get<ReviewFile[]>(`${v1}/resumes/review`)).data,
+  acceptReviewFile: async (documentId: string) =>
+    (await apiClient.post<{ candidate_id: string; name: string | null; message: string }>(`${v1}/resumes/review/${documentId}/accept`)).data,
+  deleteReviewFile: async (documentId: string) => { await apiClient.delete(`${v1}/resumes/review/${documentId}`); },
   batchStatus: async (id: string) => (await apiClient.get<BatchStatus>(`${v1}/resumes/batches/${id}`)).data,
   listCandidates: async (params: Params) =>
     (await apiClient.get<Paged<Candidate>>(`${v1}/candidates`, { params: clean(params) })).data,
@@ -67,11 +71,16 @@ export const api = {
 
   // matching / shortlist
   parseFilter: async (text: string) => (await apiClient.post<ParsedFilter>(`${v1}/shortlists/nl-filter`, { text })).data,
-  runShortlist: async (jobId: string, filters: ShortlistFilters, topK: number) =>
-    (await apiClient.post<{ run_id: string }>(`${v1}/jobs/${jobId}/match`, { filters, top_k: topK })).data,
+  startMatching: async (jobId: string) =>
+    (await apiClient.post<{ run_id: string }>(`${v1}/jobs/${jobId}/match`)).data,
+  shortlistTopK: async (jobId: string, topK: number, filters: ShortlistFilters, minScore: number | null) =>
+    (await apiClient.post<{ shortlisted: number; matching: number }>(`${v1}/jobs/${jobId}/shortlist/top-k`,
+      { top_k: topK, filters, min_score: minScore })).data,
   runStatus: async (id: string) => (await apiClient.get<RunStatus>(`${v1}/shortlists/runs/${id}`)).data,
   shortlist: async (jobId: string, params: Params) =>
-    (await apiClient.get<ShortlistList>(`${v1}/jobs/${jobId}/shortlist`, { params: clean(params) })).data,
+    (await apiClient.get<ShortlistList>(`${v1}/jobs/${jobId}/shortlist`, {
+      params: clean(params), paramsSerializer: { indexes: null }, // skills=a&skills=b
+    })).data,
   allShortlists: async (params: Params) =>
     (await apiClient.get<ShortlistList>(`${v1}/shortlists`, { params: clean(params) })).data,
   saveWeights: async (jobId: string, w: Weights) =>
@@ -98,6 +107,8 @@ export const api = {
   // auth service
   directory: async (role: Role) =>
     (await apiClient.get<DirectoryUser[]>(`${v1}/users/directory`, { params: { role } })).data,
+  cancelInvite: async (userId: string) =>
+    (await apiClient.delete<{ message: string }>(`${v1}/internal/invitations/${userId}`)).data,
   invite: async (email: string, role: "recruiter" | "hiring_manager") =>
     (await apiClient.post<{ message: string }>(`${v1}/internal/invitations`, { email, role })).data,
 };

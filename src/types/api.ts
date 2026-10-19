@@ -138,6 +138,8 @@ export interface SkillMatch {
 }
 
 export interface Explanation {
+  similarity?: number | null;
+  reason?: string[];
   cosine?: { skills: number | null; role: number | null };
   skills?: { required: SkillMatch[]; nice: SkillMatch[]; required_avg: number | null; nice_avg: number | null };
   role?: { level: number; matched_role: string | null };
@@ -192,7 +194,12 @@ export interface RunStatus {
   job_id: string | null;
   stage: Stage;
   finished: boolean;
+  considered?: number | null;
   pool: number | null;
+  below_threshold?: number | null;
+  not_indexed?: number | null;
+  threshold?: number | null;
+  note?: string | null;
   scored: number | null;
   from_cache: number | null;
   shortlisted: number | null;
@@ -255,4 +262,14 @@ export interface EmbeddingQuota {
   paused: boolean;
   resumes_at: string;
   resumes_waiting: number;
+}
+
+export interface ReviewFile {
+  document_id: string;
+  filename: string;
+  file_type: string | null;
+  file_size: number | null;
+  source_site: string | null;
+  uploaded_at: string;
+  reason: string | null;
 }

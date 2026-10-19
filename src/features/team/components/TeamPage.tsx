@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { MailPlus, RefreshCw } from "lucide-react";
+import { MailPlus, RefreshCw, XCircle } from "lucide-react";
 import { ROLE_LABEL } from "../../../app/session";
 import { Loading, PageHeader, useToast } from "../../../components/ui";
 import { api } from "../../../services/api";
@@ -26,6 +26,12 @@ export default function TeamPage() {
     onError: (err) => toast(errorMessage(err), "error"),
   });
 
+  const cancel = useMutation({
+    mutationFn: (userId: string) => api.cancelInvite(userId),
+    onSuccess: (res) => { toast(res.message, "success"); void members.refetch(); },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
+
   function submit(e: FormEvent) {
     e.preventDefault();
     invite.mutate({ email: email.trim(), role });
@@ -44,7 +50,7 @@ export default function TeamPage() {
               <option value="recruiter">Recruiter</option>
               <option value="hiring_manager">Hiring manager</option>
             </select></div>
-          <p className="small muted">Inviting someone who hasn't accepted yet sends them a fresh link.</p>
+          <p className="small muted">Inviting someone who hasn't accepted yet sends them a fresh link. Typed a wrong email? Cancel that invitation in the list.</p>
           <div className="row" style={{ justifyContent: "flex-end" }}>
             <button className="btn btn-primary" disabled={invite.isPending}><MailPlus /> {invite.isPending ? "Sending…" : "Send invitation"}</button>
           </div>
@@ -65,10 +71,16 @@ export default function TeamPage() {
                         <div className="row" style={{ justifyContent: "flex-end" }}>
                           <span className="badge amber">Invite sent</span>
                           {m.role !== "admin" && (
-                            <button className="btn btn-sm" disabled={invite.isPending}
-                                    onClick={() => invite.mutate({ email: m.email, role: m.role as "recruiter" | "hiring_manager" })}>
-                              <RefreshCw /> Resend
-                            </button>
+                            <>
+                              <button className="btn btn-sm" disabled={invite.isPending}
+                                      onClick={() => invite.mutate({ email: m.email, role: m.role as "recruiter" | "hiring_manager" })}>
+                                <RefreshCw /> Resend
+                              </button>
+                              <button className="btn btn-sm btn-danger" disabled={cancel.isPending} title="Wrong email? Cancel it and invite the right one."
+                                      onClick={() => { if (window.confirm(`Cancel the invitation to ${m.email}?`)) cancel.mutate(m.id); }}>
+                                <XCircle /> Cancel
+                              </button>
+                            </>
                           )}
                         </div>
                       ) : m.status === "pending"

@@ -8,6 +8,7 @@ import { errorMessage } from "../../../lib/axios";
 import { MAX_RESUME_FILES, MAX_UPLOAD_MB } from "../../../config/constants";
 import { formatBytes, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
 import BatchProgress from "./BatchProgress";
+import ReviewQueue from "./ReviewQueue";
 
 const LIMIT = 20;
 const BATCH_KEY = "talentiq.lastBatch";
@@ -58,10 +59,9 @@ export default function CandidatesPage() {
 
       <div className="grid grid-2" style={{ marginBottom: 16 }}>
         <div className="card">
-          <div className="card-header"><div><h2>Upload resumes</h2><p>PDF, DOCX or scanned PDF — up to 150 files at once, or one zip file.</p></div></div>
+          <div className="card-header"><div><h2>Upload resumes</h2><p>PDF, Word or scanned PDF. Up to 150 files, or one zip.</p></div></div>
           <div className="card-body stack">
-            <FileDrop multiple folders onFiles={addFiles}
-                      hint="Drop files, a folder or one zip. Each file is checked; other file types are skipped, duplicates too." />
+            <FileDrop multiple folders onFiles={addFiles} />
             {files.length > 0 && (
               <>
                 <div className="file-list">
@@ -84,9 +84,11 @@ export default function CandidatesPage() {
             {tooBig && <Alert tone="warn">These files add up to {formatBytes(totalBytes)}. Please upload at most {MAX_UPLOAD_MB} MB at a time.</Alert>}
             {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
             {rejected.length > 0 && (
-              <Alert tone="warn">
-                {rejected.length} file(s) skipped: {rejected.slice(0, 4).map((r) => `${r.filename} (${r.reason})`).join("; ")}
-                {rejected.length > 4 && "…"}
+              <Alert>
+                <strong>{rejected.length} file(s) not added</strong>
+                <ul className="skipped-list">
+                  {rejected.map((r, i) => <li key={`${r.filename}-${i}`}>{r.filename} — {r.reason}</li>)}
+                </ul>
               </Alert>
             )}
           </div>
@@ -102,11 +104,14 @@ export default function CandidatesPage() {
                              onFinished={() => {
                                void queryClient.invalidateQueries({ queryKey: ["candidates"] });
                                void queryClient.invalidateQueries({ queryKey: ["categories"] });
+                               void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
                              }} />
             ) : <p className="muted">Nothing running. Upload resumes to start.</p>}
           </div>
         </div>
       </div>
+
+      <ReviewQueue />
 
       <div className="card">
         <div className="toolbar" style={{ display: "block" }}>

@@ -37,10 +37,10 @@ export default function JobNewPage() {
   return (
     <>
       <PageHeader title="New job" crumb={<Link to="/jobs">Jobs</Link>}
-                  subtitle="Upload a JD and let AI fill in the fields for you to check, or type the job in." />
+                  subtitle="Upload a job description and let AI fill in the fields for you to check, or type the job in." />
       <div className="tabs">
         <button className={`tab ${mode === "upload" ? "active" : ""}`} onClick={() => setMode("upload")}>
-          <FileText size={15} style={{ verticalAlign: -2 }} /> Upload JD
+          <FileText size={15} style={{ verticalAlign: -2 }} /> Upload job description
         </button>
         <button className={`tab ${mode === "form" ? "active" : ""}`} onClick={() => setMode("form")}>
           <PenLine size={15} style={{ verticalAlign: -2 }} /> Type it in
@@ -58,9 +58,9 @@ export default function JobNewPage() {
             setTooBig(null);
             extract.mutate(file);
           }}
-                    hint="PDF, scanned PDF, Word or a JPG/PNG photo, up to 10 MB. AI checks that it is a JD and extracts the fields." />
+                    hint="PDF, scanned PDF, Word or a JPG/PNG photo, up to 10 MB. AI checks that it is a job description and fills in the fields." />
           {tooBig && <Alert tone="error">{tooBig} is larger than {MAX_JD_MB} MB. Please choose a smaller file.</Alert>}
-          {extract.isPending && <Alert><span className="spinner" /> Reading the JD and extracting fields… (5–30 s)</Alert>}
+          {extract.isPending && <Alert><span className="spinner" /> Reading the job description and filling in the fields… (5–30 s)</Alert>}
           {extract.isError && <Alert tone="error">{errorMessage(extract.error)}</Alert>}
         </div>
       )}
@@ -77,7 +77,7 @@ export default function JobNewPage() {
           <div className="card-body stack">
             {extracted.warnings.map((w) => <Alert key={w} tone="warn">{w}</Alert>)}
             {extracted.existing_job_id && (
-              <Alert>A job already uses this JD: <Link to={`/jobs/${extracted.existing_job_id}`}>open it</Link>.</Alert>
+              <Alert>A job already uses this job description: <Link to={`/jobs/${extracted.existing_job_id}`}>open it</Link>.</Alert>
             )}
             <JobForm key={extracted.document_id} initial={draftAsInput} submitLabel="Save job"
                      busy={create.isPending} onSubmit={(job) => create.mutate({ ...job, jd_id: extracted.document_id })} />
@@ -87,7 +87,7 @@ export default function JobNewPage() {
 
       {mode === "form" && (
         <div className="card">
-          <div className="card-header"><div><h2>Job details</h2><p>A PDF of the JD is generated from these fields.</p></div></div>
+          <div className="card-header"><div><h2>Job details</h2><p>A PDF of the job description is made from these fields.</p></div></div>
           <div className="card-body">
             <JobForm initial={EMPTY_JOB} submitLabel="Create job" busy={create.isPending}
                      onSubmit={(job) => create.mutate({ ...job, jd_id: null })} />

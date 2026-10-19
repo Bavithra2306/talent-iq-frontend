@@ -1,7 +1,8 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
   Briefcase, ClipboardCheck, Globe, LayoutDashboard, ListChecks, LogOut, ScrollText, UserCircle, UserPlus, Users,
+  ArrowLeft,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { ROLE_LABEL, useSession } from "../app/session";
@@ -78,10 +79,25 @@ export default function Layout() {
         </div>
       </aside>
       <main className="main">
-        <div className="topbar"><ProfileMenu /></div>
+        <div className="topbar"><BackButton /><ProfileMenu /></div>
         <Outlet />
       </main>
     </div>
+  );
+}
+
+/** Goes back to the previous screen; when there is none (page opened directly), to the parent page. */
+function BackButton() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  if (pathname === "/") return null;
+  const goBack = () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate(pathname.split("/").slice(0, -1).join("/") || "/");
+  };
+  return (
+    <button className="btn btn-ghost btn-sm back-btn" onClick={goBack}><ArrowLeft /> Back</button>
   );
 }
 

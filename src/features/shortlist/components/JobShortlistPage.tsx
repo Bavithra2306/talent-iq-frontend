@@ -1,20 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { History, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2, FileText } from "lucide-react";
+import { FileText, History, ListChecks, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2, X } from "lucide-react";
 import {
   Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreBar, StageTimeline, StatusBadge, TagInput, useToast,
 } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { describeAction, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
-import type { ParsedFilter, ShortlistEntry, ShortlistFilters, Stage, Weights } from "../../../types/api";
+import type { ParsedFilter, ShortlistEntry, Stage, Weights } from "../../../types/api";
 import EntryDetail from "./EntryDetail";
 
 const RUN_STAGES: Stage[] = ["created", "collecting", "reading", "scoring", "shortlisted"];
+const STAGE_NAMES: Partial<Record<Stage, string>> = {
+  created: "Started", collecting: "Comparing resumes", reading: "Earlier scores", scoring: "AI scoring", shortlisted: "Done",
+};
 const WEIGHT_LABELS: [keyof Weights, string][] = [
   ["skill_pct", "Skills"], ["role_pct", "Role"], ["exp_pct", "Experience"], ["edu_pct", "Education"],
 ];
+
+interface ResultFilters {
+  skills: string[]; location: string; min_experience: string; max_experience: string;
+  education: string; min_score: string; status: string;
+}
+const NO_FILTERS: ResultFilters = { skills: [], location: "", min_experience: "", max_experience: "", education: "", min_score: "", status: "" };
+const num = (v: string) => (v === "" ? null : Number(v));
 
 export default function JobShortlistPage() {
   const { id = "" } = useParams();
@@ -22,18 +32,25 @@ export default function JobShortlistPage() {
   const queryClient = useQueryClient();
   const job = useQuery({ queryKey: ["job", id], queryFn: () => api.getJob(id) });
 
-  // run settings
-  const [filters, setFilters] = useState<ShortlistFilters>({ must_have_skills: [] });
-  const [topK, setTopK] = useState(10);
+  // 1. matching
   const [runId, setRunId] = useState<string | null>(null);
+  const runStatus = useQuery({
+    queryKey: ["run", runId],
+    queryFn: () => api.runStatus(runId!),
+    enabled: Boolean(runId),
+    refetchInterval: (q) => (q.state.data?.finished ? false : 2000),
+  });
+  const start = useMutation({ mutationFn: () => api.startMatching(id), onSuccess: (r) => setRunId(r.run_id) });
+  useEffect(() => {
+    if (runStatus.data?.finished) void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
+  }, [runStatus.data?.finished, id, queryClient]);
+  const running = start.isPending || Boolean(runId && !runStatus.data?.finished);
+
+  // 2. results, then filters / natural-language filter / top K
+  const [filters, setFilters] = useState<ResultFilters>(NO_FILTERS);
+  const [topK, setTopK] = useState(10);
   const [nlText, setNlText] = useState("");
   const [parsed, setParsed] = useState<ParsedFilter | null>(null);
-  useEffect(() => {
-    if (job.data?.category) setFilters((f) => ({ ...f, category: f.category ?? job.data?.category }));
-  }, [job.data?.category]);
-
-  // results view
-  const [view, setView] = useState({ status: "", min_score: "", skill: "", location: "", sort: "rank", order: "asc", include_unranked: false });
   const [weights, setWeights] = useState<Weights | null>(null);
   const [preview, setPreview] = useState(false);
   const [openEntry, setOpenEntry] = useState<ShortlistEntry | null>(null);
@@ -41,35 +58,46 @@ export default function JobShortlistPage() {
   const [history, setHistory] = useState(false);
 
   const list = useQuery({
-    queryKey: ["shortlist", id, view, preview ? weights : null],
-    queryFn: () => api.shortlist(id, { ...view, limit: 200, ...(preview && weights ? weights : {}) }),
+    queryKey: ["shortlist", id, filters, preview ? weights : null],
+    queryFn: () => api.shortlist(id, {
+      skills: filters.skills, location: filters.location, education: filters.education,
+      min_experience: filters.min_experience, max_experience: filters.max_experience,
+      min_score: filters.min_score, status: filters.status,
+      sort: "score", order: "desc", limit: 200, ...(preview && weights ? weights : {}),
+    }),
   });
   useEffect(() => {
     if (list.data && !weights) setWeights(list.data.weights);
   }, [list.data, weights]);
 
-  const runStatus = useQuery({
-    queryKey: ["run", runId],
-    queryFn: () => api.runStatus(runId!),
-    enabled: Boolean(runId),
-    refetchInterval: (q) => (q.state.data?.finished ? false : 2000),
-  });
-  useEffect(() => {
-    if (runStatus.data?.finished) void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
-  }, [runStatus.data?.finished, id, queryClient]);
-
   const interpret = useMutation({ mutationFn: () => api.parseFilter(nlText), onSuccess: setParsed });
-  const run = useMutation({
-    mutationFn: () => api.runShortlist(id, filters, topK),
-    onSuccess: (r) => setRunId(r.run_id),
+  const applyParsed = (p: ParsedFilter) => {
+    const f = p.filters;
+    setFilters({
+      ...filters,
+      skills: f.must_have_skills ?? [], location: f.location ?? "", education: f.education ?? "",
+      min_experience: f.min_experience?.toString() ?? "", max_experience: f.max_experience?.toString() ?? "",
+    });
+    if (p.top_k) setTopK(p.top_k);
+    setParsed(null);
+  };
+  const pickTopK = useMutation({
+    mutationFn: () => api.shortlistTopK(id, topK, {
+      must_have_skills: filters.skills, location: filters.location || null, education: filters.education || null,
+      min_experience: num(filters.min_experience), max_experience: num(filters.max_experience),
+    }, num(filters.min_score)),
+    onSuccess: (r) => {
+      void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
+      toast(`Shortlisted ${r.shortlisted} of ${r.matching} matching candidate(s).`, "success");
+    },
+    onError: (err) => toast(errorMessage(err), "error"),
   });
   const saveWeights = useMutation({
     mutationFn: (w: Weights) => api.saveWeights(id, w),
-    onSuccess: (data) => {
+    onSuccess: () => {
       setPreview(false);
-      queryClient.setQueryData(["shortlist", id, view, null], data);
       void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
-      toast("Weights saved and shortlist re-ranked.", "success");
+      toast("Weights saved and results re-ranked.", "success");
     },
   });
   const notes = useMutation({
@@ -84,7 +112,8 @@ export default function JobShortlistPage() {
 
   const sum = weights ? weights.skill_pct + weights.role_pct + weights.exp_pct + weights.edu_pct : 100;
   const shortlisted = useMemo(() => list.data?.items.filter((e) => e.status === "shortlisted").length ?? 0, [list.data]);
-  const running = Boolean(runId && !runStatus.data?.finished);
+  const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
+  const s = runStatus.data;
 
   if (job.isLoading) return <Loading />;
   if (!job.data) return <Alert tone="error">{errorMessage(job.error, "Job not found.")}</Alert>;
@@ -92,9 +121,8 @@ export default function JobShortlistPage() {
   return (
     <>
       <PageHeader
-        crumb={<><Link to="/shortlists">Shortlists</Link> / <Link to={`/jobs/${id}`}>{job.data.title}</Link></>}
         title={`Shortlist · ${job.data.title}`}
-        subtitle={`${job.data.skills?.length ?? 0} required skills · ${job.data.experience_years ?? 0}+ yrs · ${job.data.education ?? "no education requirement"}`}
+        subtitle={`${job.data.category ?? "Any category"} · ${job.data.skills?.length ?? 0} required skills · ${job.data.experience_years ?? 0}+ yrs · ${job.data.education ?? "no education requirement"}`}
         actions={
           <>
             <button className="btn" onClick={() => setHistory(true)}><History /> Review history</button>
@@ -104,75 +132,36 @@ export default function JobShortlistPage() {
       />
 
       <div className="grid grid-2" style={{ marginBottom: 16, alignItems: "start" }}>
-        {/* ---- run matching ---- */}
+        {/* ---- 1. matching ---- */}
         <div className="card">
-          <div className="card-header"><div><h2>Find candidates</h2><p>Choose who to consider. AI then checks each person’s skills and past jobs against this role.</p></div></div>
+          <div className="card-header"><div><h2>Matching</h2>
+            <p>Compares every {job.data.category ?? ""} resume with this job description. Experience and education are scored by rules;
+               resumes that are at least 75% similar are then scored by AI on skills and role.</p></div></div>
           <div className="card-body stack">
-            <div className="field">
-              <label htmlFor="nl"><Wand2 size={14} style={{ verticalAlign: -2 }} /> Describe who you want</label>
-              <div className="row" style={{ flexWrap: "nowrap" }}>
-                <input id="nl" className="input" value={nlText} onChange={(e) => setNlText(e.target.value)}
-                       placeholder='e.g. "5yrs experince in chenai with pythn"' onKeyDown={(e) => e.key === "Enter" && nlText.trim() && interpret.mutate()} />
-                <button className="btn" disabled={!nlText.trim() || interpret.isPending} onClick={() => interpret.mutate()}>
-                  {interpret.isPending ? "Reading…" : "Go"}
-                </button>
-              </div>
-              {interpret.isError && <Alert tone="error">{errorMessage(interpret.error)}</Alert>}
-            </div>
-            {parsed && (
-              <Alert>
-                <div className="stack" style={{ gap: 8 }}>
-                  <div>Did you mean: <strong>“{parsed.corrected_text}”</strong>?</div>
-                  <div className="row">
-                    {Object.entries(parsed.filters).filter(([, v]) => v !== null && !(Array.isArray(v) && !v.length)).map(([k, v]) => (
-                      <span key={k} className="tag">{labelize(k)}: {Array.isArray(v) ? v.join(", ") : String(v)}</span>
-                    ))}
-                    {parsed.top_k && <span className="tag">Top {parsed.top_k}</span>}
-                  </div>
-                  <div className="row">
-                    <button className="btn btn-sm btn-primary" onClick={() => {
-                      setFilters({ ...parsed.filters, category: parsed.filters.category ?? filters.category, must_have_skills: parsed.filters.must_have_skills ?? [] });
-                      if (parsed.top_k) setTopK(parsed.top_k);
-                      setParsed(null);
-                    }}>Yes, use these filters</button>
-                    <button className="btn btn-sm" onClick={() => setParsed(null)}>No</button>
-                  </div>
-                </div>
-              </Alert>
-            )}
-            <div className="form-grid">
-              <div className="field"><label>Category</label>
-                <input className="input" value={filters.category ?? ""} onChange={(e) => setFilters({ ...filters, category: e.target.value || null })} placeholder="Any" /></div>
-              <div className="field"><label>Location</label>
-                <input className="input" value={filters.location ?? ""} onChange={(e) => setFilters({ ...filters, location: e.target.value || null })} placeholder="Any" /></div>
-              <div className="field"><label>Min experience</label>
-                <input className="input" type="number" min={0} value={filters.min_experience ?? ""} onChange={(e) => setFilters({ ...filters, min_experience: e.target.value === "" ? null : Number(e.target.value) })} /></div>
-              <div className="field"><label>Max experience</label>
-                <input className="input" type="number" min={0} value={filters.max_experience ?? ""} onChange={(e) => setFilters({ ...filters, max_experience: e.target.value === "" ? null : Number(e.target.value) })} /></div>
-              <div className="field"><label>Education contains</label>
-                <input className="input" value={filters.education ?? ""} onChange={(e) => setFilters({ ...filters, education: e.target.value || null })} placeholder="e.g. B.Tech" /></div>
-              <div className="field"><label>How many to shortlist</label>
-                <input className="input" type="number" min={1} max={100} value={topK} onChange={(e) => setTopK(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} /></div>
-              <div className="field full"><span className="label">Must-have skills</span>
-                <TagInput value={filters.must_have_skills ?? []} onChange={(v) => setFilters({ ...filters, must_have_skills: v })} placeholder="Only people who have these skills" /></div>
-            </div>
-            {run.isError && <Alert tone="error">{errorMessage(run.error)}</Alert>}
-            <div className="row" style={{ justifyContent: "flex-end" }}>
-              <button className="btn btn-primary" disabled={running || run.isPending || !job.data.skills?.length} onClick={() => run.mutate()}>
-                <Play /> {running ? "Finding matches…" : "Find best matches"}
+            <div className="row" style={{ justifyContent: "flex-start" }}>
+              <button className="btn btn-primary" disabled={running || !job.data.skills?.length} onClick={() => start.mutate()}>
+                <Play /> {running ? "Matching…" : list.data?.total ? "Match again" : "Start matching"}
               </button>
+              {!job.data.skills?.length && <span className="muted small">Add required skills to the job first.</span>}
             </div>
-            {runId && runStatus.data && (
+            {start.isError && <Alert tone="error">{errorMessage(start.error)}</Alert>}
+            {runId && s && (
               <div className="stack" style={{ gap: 8 }}>
-                <StageTimeline stages={RUN_STAGES} current={runStatus.data.stage} finished={runStatus.data.finished} />
+                <StageTimeline stages={RUN_STAGES} current={s.stage} finished={s.finished} labels={STAGE_NAMES} />
                 <div className="row small">
-                  {runStatus.data.pool !== null && <span className="badge plain">{runStatus.data.pool} checked</span>}
-                  {runStatus.data.scored !== null && <span className="badge plain">{runStatus.data.scored} scored</span>}
-                  {Boolean(runStatus.data.from_cache) && <span className="badge plain">{runStatus.data.from_cache} scored before</span>}
-                  {runStatus.data.shortlisted !== null && <span className="badge green">{runStatus.data.shortlisted} shortlisted</span>}
-                  {Boolean(runStatus.data.failed) && <span className="badge red">{runStatus.data.failed} failed</span>}
-                  {runStatus.data.seconds !== null && <span className="badge plain">{runStatus.data.seconds}s</span>}
+                  {s.considered !== null && <span className="badge plain">{s.considered} in {job.data.category ?? "the category"}</span>}
+                  {s.pool !== null && <span className="badge green">{s.pool} at least 75% similar</span>}
+                  {Boolean(s.below_threshold) && <span className="badge plain">{s.below_threshold} below 75%</span>}
+                  {Boolean(s.not_indexed) && <span className="badge amber">{s.not_indexed} not searchable yet</span>}
+                  {s.scored !== null && <span className="badge plain">{s.scored} scored</span>}
+                  {Boolean(s.from_cache) && <span className="badge plain">{s.from_cache} reused</span>}
+                  {Boolean(s.failed) && <span className="badge red">{s.failed} failed</span>}
+                  {s.seconds !== null && <span className="badge plain">{s.seconds}s</span>}
                 </div>
+                {s.note && <Alert tone="warn">{s.note}</Alert>}
+                {Boolean(s.not_indexed) && s.finished && (
+                  <Alert tone="warn">{s.not_indexed} resume(s) are still being added to search and were left out. Run matching again later to include them.</Alert>
+                )}
               </div>
             )}
           </div>
@@ -180,7 +169,8 @@ export default function JobShortlistPage() {
 
         {/* ---- weights ---- */}
         <div className="card">
-          <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> What matters most</h2><p>Move the sliders to change how candidates are ranked. Changes show instantly.</p></div></div>
+          <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> How the score is made</h2>
+            <p>Default: skills 40%, experience 25%, role 20%, education 15%. Change them to re-rank instantly.</p></div></div>
           <div className="card-body stack">
             {weights && WEIGHT_LABELS.map(([key, label]) => (
               <div key={key} className="slider-row">
@@ -208,45 +198,97 @@ export default function JobShortlistPage() {
         </div>
       </div>
 
-      {/* ---- results ---- */}
+      {/* ---- 2. results ---- */}
       <div className="card">
-        <div className="toolbar">
-          <select className="select" value={view.status} onChange={(e) => setView({ ...view, status: e.target.value })}>
-            <option value="">All statuses</option>
-            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-          </select>
-          <input className="input" type="number" min={0} max={100} placeholder="Min score" value={view.min_score} onChange={(e) => setView({ ...view, min_score: e.target.value })} />
-          <input className="input" placeholder="Skill" value={view.skill} onChange={(e) => setView({ ...view, skill: e.target.value })} />
-          <input className="input" placeholder="Location" value={view.location} onChange={(e) => setView({ ...view, location: e.target.value })} />
-          <select className="select" value={`${view.sort}:${view.order}`} onChange={(e) => { const [s, o] = e.target.value.split(":"); setView({ ...view, sort: s, order: o }); }}>
-            <option value="rank:asc">Rank</option>
-            <option value="score:desc">Highest score</option>
-            <option value="experience:desc">Most experience</option>
-            <option value="date_added:desc">Newest</option>
-            <option value="name:asc">Name A–Z</option>
-          </select>
-          <label className="check small"><input type="checkbox" checked={view.include_unranked} onChange={(e) => setView({ ...view, include_unranked: e.target.checked })} /> Show earlier results</label>
+        <div className="card-header"><div><h2>Results</h2>
+          <p>Everyone scored for this job, best first, with the reasons. Narrow them down, then shortlist the top candidates.</p></div></div>
+
+        <div className="toolbar" style={{ display: "block" }}>
+          <div className="row" style={{ flexWrap: "nowrap" }}>
+            <Wand2 size={16} style={{ color: "var(--brand-600)", flex: "none" }} />
+            <input className="input" value={nlText} onChange={(e) => setNlText(e.target.value)}
+                   placeholder='Describe who you want, e.g. "5+ yrs in chennai with docker"'
+                   onKeyDown={(e) => e.key === "Enter" && nlText.trim() && interpret.mutate()} />
+            <button className="btn" disabled={!nlText.trim() || interpret.isPending} onClick={() => interpret.mutate()}>
+              {interpret.isPending ? "Reading…" : "Apply"}
+            </button>
+          </div>
+          {interpret.isError && <div style={{ marginTop: 8 }}><Alert tone="error">{errorMessage(interpret.error)}</Alert></div>}
+          {parsed && (
+            <div style={{ marginTop: 8 }}>
+              <Alert>
+                <div className="stack" style={{ gap: 8 }}>
+                  <div>Did you mean: <strong>“{parsed.corrected_text}”</strong>?</div>
+                  <div className="row">
+                    {Object.entries(parsed.filters).filter(([k, v]) => k !== "category" && v !== null && !(Array.isArray(v) && !v.length)).map(([k, v]) => (
+                      <span key={k} className="tag">{labelize(k)}: {Array.isArray(v) ? v.join(", ") : String(v)}</span>
+                    ))}
+                    {parsed.top_k && <span className="tag">Top {parsed.top_k}</span>}
+                  </div>
+                  <div className="row">
+                    <button className="btn btn-sm btn-primary" onClick={() => applyParsed(parsed)}>Yes, use these filters</button>
+                    <button className="btn btn-sm" onClick={() => setParsed(null)}>No</button>
+                  </div>
+                </div>
+              </Alert>
+            </div>
+          )}
         </div>
+        <div className="toolbar">
+          <div style={{ minWidth: 220, flex: 1 }}>
+            <TagInput value={filters.skills} onChange={(v) => setFilters({ ...filters, skills: v })} placeholder="Must-have skills" />
+          </div>
+          <input className="input" placeholder="Location" value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })} />
+          <input className="input" style={{ maxWidth: 110 }} type="number" min={0} placeholder="Min yrs" value={filters.min_experience} onChange={(e) => setFilters({ ...filters, min_experience: e.target.value })} />
+          <input className="input" style={{ maxWidth: 110 }} type="number" min={0} placeholder="Max yrs" value={filters.max_experience} onChange={(e) => setFilters({ ...filters, max_experience: e.target.value })} />
+          <input className="input" placeholder="Education, e.g. B.Tech" value={filters.education} onChange={(e) => setFilters({ ...filters, education: e.target.value })} />
+          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Min score" value={filters.min_score} onChange={(e) => setFilters({ ...filters, min_score: e.target.value })} />
+          <select className="select" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
+            <option value="">All statuses</option>
+            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((st) => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
+          </select>
+          {filtered && <button className="btn btn-ghost btn-sm" onClick={() => setFilters(NO_FILTERS)}><X /> Clear</button>}
+        </div>
+        <div className="toolbar">
+          <span className="muted">{list.data ? `${list.data.total} candidate(s)${filtered ? " match these filters" : ""}` : ""}</span>
+          <div className="row" style={{ marginLeft: "auto" }}>
+            <label className="small muted" htmlFor="topk">Top</label>
+            <input id="topk" className="input" style={{ width: 80 }} type="number" min={1} max={100} value={topK}
+                   onChange={(e) => setTopK(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} />
+            <button className="btn btn-primary" disabled={!list.data?.total || pickTopK.isPending} onClick={() => pickTopK.mutate()}>
+              <ListChecks /> Shortlist top {topK}
+            </button>
+          </div>
+        </div>
+
         {list.isLoading && <Loading />}
         {list.isError && <div className="card-body"><Alert tone="error">{errorMessage(list.error)}</Alert></div>}
         {list.data?.items.length === 0 && (
-          <Empty title="No matches yet" icon={<Sparkles />}>Press “Find best matches” above to check candidates for this job.</Empty>
+          filtered
+            ? <Empty title="No one matches these filters" icon={<Sparkles />}>Change or clear the filters.</Empty>
+            : <Empty title="No results yet" icon={<Sparkles />}>Press “Start matching” to score the resumes for this job.</Empty>
         )}
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>#</th><th>Candidate</th><th>Total</th><th>Skills</th><th>Role</th><th>Experience</th><th>Education</th><th>Status</th><th title="In final shortlist">Shortlist</th><th>Resume</th></tr></thead>
+              <thead><tr><th>#</th><th>Candidate and reasons</th><th>Similar</th><th>Total</th><th>Skills</th><th>Role</th><th>Exp.</th><th>Edu.</th><th>Status</th><th title="In the shortlist">Shortlist</th><th>Resume</th></tr></thead>
               <tbody>
-                {list.data.items.map((e) => {
+                {list.data.items.map((e, i) => {
                   const locked = Boolean(e.shared_to) || !["sourced", "shortlisted"].includes(e.status);
+                  const reasons = (e.explanation?.reason ?? []).filter((r) => !r.endsWith("similar to the job description"));
+                  const similarity = e.explanation?.similarity;
                   return (
                     <tr key={e.id} className="clickable" onClick={() => setOpenEntry(e)}>
-                      <td><strong>{e.rank ?? "—"}</strong></td>
-                      <td>
+                      <td><strong>{e.rank ?? i + 1}</strong></td>
+                      <td style={{ minWidth: 280 }}>
                         <div className="cell-title">{e.name ?? "Name not given"} {e.notes_by_recruiter && <span title={e.notes_by_recruiter}>📝</span>}</div>
                         <div className="cell-sub">{[e.current_title, formatYears(e.total_years_experience), e.location].filter((x) => x && x !== "—").join(" · ")}</div>
+                        {reasons.length > 0 && (
+                          <ul className="reasons">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+                        )}
                       </td>
-                      <td style={{ minWidth: 150 }}><ScoreBar value={e.total_score} /></td>
+                      <td>{similarity != null ? `${Math.round(similarity * 100)}%` : "—"}</td>
+                      <td style={{ minWidth: 140 }}><ScoreBar value={e.total_score} /></td>
                       <td>{e.scores.skills ?? "—"}</td>
                       <td>{e.scores.role ?? "—"}</td>
                       <td>{e.scores.experience ?? "—"}</td>
@@ -303,7 +345,7 @@ function ShareModal({ jobId, count, onClose, onShared }: { jobId: string; count:
     <Modal title="Share with a hiring manager" onClose={onClose}
            footer={<><button className="btn" onClick={onClose}>Cancel</button>
              <button className="btn btn-primary" disabled={!managerId || share.isPending} onClick={() => share.mutate()}><Send /> Share {count} candidate(s)</button></>}>
-      <p className="muted">The {count} shortlisted candidate(s) are shared with their scores, explanations and your notes.</p>
+      <p className="muted">The {count} shortlisted candidate(s) are shared with their scores, reasons and your notes.</p>
       {managers.isLoading && <Loading />}
       {managers.data?.length === 0 && <Alert tone="warn">There are no active hiring managers yet. An admin can invite one from Team.</Alert>}
       {managers.data && managers.data.length > 0 && (

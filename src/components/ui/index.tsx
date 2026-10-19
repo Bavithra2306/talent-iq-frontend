@@ -258,8 +258,8 @@ export function Pagination({ total, limit, offset, onChange }: {
 const FAIL_STAGES: Stage[] = ["failed", "partly_completed"];
 
 /** The stage chain with the reached stages ticked, plus an optional event list. */
-export function StageTimeline({ stages, current, finished, events }: {
-  stages: Stage[]; current: Stage; finished: boolean; events?: PipelineEvent[];
+export function StageTimeline({ stages, current, finished, events, labels }: {
+  stages: Stage[]; current: Stage; finished: boolean; events?: PipelineEvent[]; labels?: Partial<Record<Stage, string>>;
 }) {
   const failed = FAIL_STAGES.includes(current);
   const reached = Math.max(stages.indexOf(current), failed ? stages.length - 2 : -1);
@@ -274,7 +274,7 @@ export function StageTimeline({ stages, current, finished, events }: {
               {i > 0 && <span className="stage-line" />}
               <span className={`stage ${done ? "done" : isCurrent ? "current" : ""}`}>
                 <span className="dot">{done ? <CheckCircle2 /> : isCurrent && !finished ? <Loader2 className="spin-icon" /> : <Circle />}</span>
-                {labelize(stage)}
+                {labels?.[stage] ?? labelize(stage)}
               </span>
             </div>
           );

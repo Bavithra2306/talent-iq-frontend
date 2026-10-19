@@ -52,7 +52,7 @@ export default function LoginPage({ admin = false }: { admin?: boolean }) {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout admin={admin}>
       {admin && <span className="badge brand plain" style={{ justifySelf: "start" }}>Admin</span>}
       <h1>{admin ? "Admin sign in" : "Welcome back"}</h1>
       <p className="auth-sub">{admin ? "Manage your team and see all activity." : "Sign in to continue to TalentIQ."}</p>

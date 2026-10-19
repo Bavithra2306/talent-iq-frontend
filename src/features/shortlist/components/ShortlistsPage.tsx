@@ -20,10 +20,10 @@ export default function ShortlistsPage() {
 
   return (
     <>
-      <PageHeader title="Shortlists" subtitle="Pick a job to find the best candidates for it, and see everyone you have scored." />
+      <PageHeader title="Shortlists" subtitle="Pick a job description and press Start matching." />
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><div><h2>Open jobs</h2><p>Choose a job to find and shortlist candidates.</p></div></div>
+        <div className="card-header"><div><h2>Job descriptions</h2><p>Choose one to match resumes against it.</p></div></div>
         {jobs.isLoading && <Loading />}
         {jobs.data?.items.length === 0 && <Empty title="No open jobs">Create a job first.</Empty>}
         {jobs.data && jobs.data.items.length > 0 && (
@@ -60,7 +60,7 @@ export default function ShortlistsPage() {
         </div>
         {entries.isLoading && <Loading />}
         {entries.isError && <div className="card-body"><Alert tone="error">{errorMessage(entries.error)}</Alert></div>}
-        {entries.data?.items.length === 0 && <Empty title="Nothing here yet" icon={<ListChecks />}>Open a job above and press “Find best matches”.</Empty>}
+        {entries.data?.items.length === 0 && <Empty title="Nothing here yet" icon={<ListChecks />}>Open a job description above and press “Start matching”.</Empty>}
         {entries.data && entries.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
