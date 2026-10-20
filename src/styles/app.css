@@ -363,3 +363,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .home-actions { grid-template-columns: 1fr; }
   .home-hello h1 { font-size: 34px; }
 }
+
+.upload-result { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;
+  border: 1px solid var(--line, #e5e7eb); border-radius: 12px; background: var(--brand-50, #f5f3ff); }
+.upload-counts { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14.5px; }
+.upload-counts .ok strong { color: var(--green-600, #16a34a); }
+.upload-counts .warn strong { color: var(--amber-600, #d97706); }
+.upload-counts .bad strong { color: var(--red-600, #dc2626); }
+.failed-files { background: #fff; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
+.failed-files ul { margin: 6px 0 0; padding-left: 18px; max-height: 180px; overflow: auto; }
+.found-count { font-size: 18px; font-weight: 650; color: var(--green-600, #16a34a); }

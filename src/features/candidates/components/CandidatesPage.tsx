@@ -112,18 +112,13 @@ export default function ResumesPage() {
       <ReviewQueue origin="all" />
 
       <div className="card">
-        <div className="toolbar" style={{ display: "block" }}>
-          <div className="chips">
-            <button className={`chip ${filters.category === "" ? "active" : ""}`} onClick={() => setFilter("category", "")}>All</button>
-            {categories.data?.map((c) => c.category && (
-              <button key={c.category} className={`chip ${filters.category === c.category ? "active" : ""}`}
-                      onClick={() => setFilter("category", c.category ?? "")}>
-                {c.category}<span className="count">{c.count}</span>
-              </button>
-            ))}
-          </div>
-        </div>
         <div className="toolbar">
+          <select className="select" value={filters.category} onChange={(e) => setFilter("category", e.target.value)} aria-label="Category">
+            <option value="">All categories ({totalResumes ?? 0})</option>
+            {categories.data?.filter((c) => c.category).map((c) => (
+              <option key={c.category} value={c.category ?? ""}>{c.category} ({c.count})</option>
+            ))}
+          </select>
           <div className="row grow" style={{ position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: 10, color: "var(--ink-400)" }} />
             <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Name, email or title"

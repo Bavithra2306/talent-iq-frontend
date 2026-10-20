@@ -112,7 +112,10 @@ export interface BatchStatus {
   embeddings_pending: number | null;
   embeddings_note: string | null;
   needs_review?: number | null;
+  new_candidates?: number | null;
+  updated_candidates?: number | null;
   failures: { filename: string; reason: string }[];
+  review?: { filename: string; reason: string }[];
   events: PipelineEvent[];
 }
 

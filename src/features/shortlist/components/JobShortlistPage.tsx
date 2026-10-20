@@ -56,6 +56,7 @@ export default function JobShortlistPage() {
   const [openEntry, setOpenEntry] = useState<ShortlistEntry | null>(null);
   const [sharing, setSharing] = useState(false);
   const [history, setHistory] = useState(false);
+  const [tab, setTab] = useState<"matches" | "shortlisted">("matches");
 
   const list = useQuery({
     queryKey: ["shortlist", id, filters, preview ? weights : null],
@@ -94,6 +95,7 @@ export default function JobShortlistPage() {
     onSuccess: (r) => {
       void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
       toast(`Shortlisted ${r.shortlisted} of ${r.matching} matching candidate(s).`, "success");
+      setTab("shortlisted");
     },
     onError: (err) => toast(errorMessage(err), "error"),
   });
@@ -152,16 +154,7 @@ export default function JobShortlistPage() {
             {runId && s && (
               <div className="stack" style={{ gap: 8 }}>
                 <StageTimeline stages={RUN_STAGES} current={s.stage} finished={s.finished} labels={STAGE_NAMES} />
-                <div className="row small">
-                  {s.considered !== null && <span className="badge plain">{s.considered} in {job.data.category ?? "the category"}</span>}
-                  {s.pool !== null && s.threshold != null && <span className="badge green">{s.pool} at least {Math.round(s.threshold * 100)}% similar</span>}
-                  {Boolean(s.below_threshold) && s.threshold != null && <span className="badge plain">{s.below_threshold} below {Math.round(s.threshold * 100)}%</span>}
-                  {Boolean(s.not_indexed) && <span className="badge amber">{s.not_indexed} not searchable yet</span>}
-                  {s.scored !== null && <span className="badge plain">{s.scored} scored</span>}
-                  {Boolean(s.from_cache) && <span className="badge plain">{s.from_cache} reused</span>}
-                  {Boolean(s.failed) && <span className="badge red">{s.failed} failed</span>}
-                  {s.seconds !== null && <span className="badge plain">{s.seconds}s</span>}
-                </div>
+                {s.finished && Boolean(s.scored) && <div className="found-count">{s.scored} resumes found</div>}
                 {s.note && <Alert tone={s.pool ? "info" : "warn"}>{s.note}</Alert>}
                 {Boolean(s.not_indexed) && s.finished && (
                   <Alert tone="warn">{s.not_indexed} resume(s) are still being added to search and were left out. Run matching again later to include them.</Alert>
@@ -202,6 +195,17 @@ export default function JobShortlistPage() {
         </div>
       </div>
 
+      <div className="tabs">
+        <button className={`tab ${tab === "matches" ? "active" : ""}`} onClick={() => setTab("matches")}>
+          Matches {list.data ? `(${list.data.total})` : ""}
+        </button>
+        <button className={`tab ${tab === "shortlisted" ? "active" : ""}`} onClick={() => setTab("shortlisted")}>
+          Shortlisted {picked.data ? `(${picked.data.total})` : ""}
+        </button>
+      </div>
+
+      {tab === "matches" && (
+        <>
       {/* ---- 2. results ---- */}
       <div className="card">
         <div className="card-header"><div><h2>Results</h2>
@@ -275,12 +279,11 @@ export default function JobShortlistPage() {
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>#</th><th>Candidate and reasons</th><th>Similar</th><th>Total</th><th>Skills</th><th>Role</th><th>Exp.</th><th>Edu.</th><th>Status</th><th title="In the shortlist">Shortlist</th><th>Resume</th></tr></thead>
+              <thead><tr><th>#</th><th>Candidate and reasons</th><th>Total</th><th>Skills</th><th>Role</th><th>Exp.</th><th>Edu.</th><th>Status</th><th title="In the shortlist">Shortlist</th><th>Resume</th></tr></thead>
               <tbody>
                 {list.data.items.map((e, i) => {
                   const locked = Boolean(e.shared_to) || !["sourced", "shortlisted"].includes(e.status);
                   const reasons = (e.explanation?.reason ?? []).filter((r) => !r.endsWith("similar to the job description"));
-                  const similarity = e.explanation?.similarity;
                   return (
                     <tr key={e.id} className="clickable" onClick={() => setOpenEntry(e)}>
                       <td><strong>{e.rank ?? i + 1}</strong></td>
@@ -291,7 +294,6 @@ export default function JobShortlistPage() {
                           <ul className="reasons">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>
                         )}
                       </td>
-                      <td>{similarity != null ? `${Math.round(similarity * 100)}%` : "—"}</td>
                       <td style={{ minWidth: 140 }}><ScoreBar value={e.total_score} /></td>
                       <td>{e.scores.skills ?? "—"}</td>
                       <td>{e.scores.role ?? "—"}</td>
@@ -317,8 +319,13 @@ export default function JobShortlistPage() {
         )}
       </div>
 
+        </>
+      )}
+
+      {tab === "shortlisted" && (
+        <>
       {/* ---- 3. shortlisted: notes, then share ---- */}
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card">
         <div className="card-header">
           <div><h2>Shortlisted {picked.data ? `(${picked.data.total})` : ""}</h2>
             <p>Write why you chose each person, then share them with a hiring manager.</p></div>
@@ -361,6 +368,9 @@ export default function JobShortlistPage() {
           </div>
         )}
       </div>
+
+        </>
+      )}
 
       {openEntry && (
         <Drawer title="Candidate match" onClose={() => setOpenEntry(null)}>
