@@ -144,14 +144,14 @@ function SourceOptions({ type, opts, update }: {
               <option value="ahmedheakl/resume-atlas">ahmedheakl/resume-atlas (13,389 resumes)</option>
             </select></div>
           <div className="field"><label>Category</label>{categorySelect(opts.huggingface.category, (v) => update("huggingface", { category: v }))}</div>
-          <div className="field"><label>How many</label>{max(opts.huggingface.max_results, 50, (v) => update("huggingface", { max_results: v }))}</div>
+          <div className="field"><label>How many</label>{max(opts.huggingface.max_results, 200, (v) => update("huggingface", { max_results: v }))}</div>
         </div>
       );
     case "kaggle":
       return (
         <div className="form-grid">
           <div className="field"><label>Category</label>{categorySelect(opts.kaggle.category, (v) => update("kaggle", { category: v }))}</div>
-          <div className="field"><label>How many</label>{max(opts.kaggle.max_results, 50, (v) => update("kaggle", { max_results: v }))}</div>
+          <div className="field"><label>How many</label>{max(opts.kaggle.max_results, 200, (v) => update("kaggle", { max_results: v }))}</div>
         </div>
       );
     case "github":
@@ -160,7 +160,7 @@ function SourceOptions({ type, opts, update }: {
           <div className="field full"><label>Search</label>
             <input className="input" value={opts.github.query} onChange={(e) => update("github", { query: e.target.value })} />
             <span className="hint">GitHub user search, e.g. language:java location:bangalore</span></div>
-          <div className="field"><label>How many</label>{max(opts.github.max_results, 30, (v) => update("github", { max_results: v }))}</div>
+          <div className="field"><label>How many</label>{max(opts.github.max_results, 200, (v) => update("github", { max_results: v }))}</div>
         </div>
       );
     case "stackexchange":
@@ -168,7 +168,7 @@ function SourceOptions({ type, opts, update }: {
         <div className="form-grid">
           <div className="field"><label>Tag</label>
             <input className="input" value={opts.stackexchange.tag} onChange={(e) => update("stackexchange", { tag: e.target.value })} /></div>
-          <div className="field"><label>How many</label>{max(opts.stackexchange.max_results, 30, (v) => update("stackexchange", { max_results: v }))}</div>
+          <div className="field"><label>How many</label>{max(opts.stackexchange.max_results, 200, (v) => update("stackexchange", { max_results: v }))}</div>
         </div>
       );
     case "url":
@@ -192,7 +192,7 @@ function buildRequest(selected: Set<SourceType>, o: Options): Record<string, unk
   if (selected.has("github")) sources.push({ type: "github", ...o.github });
   if (selected.has("stackexchange")) sources.push({ type: "stackexchange", ...o.stackexchange });
   if (selected.has("url")) {
-    sources.push({ type: "url", urls: o.url.urls.split(/\s+/).filter(Boolean).slice(0, 20), follow_links: o.url.follow_links });
+    sources.push({ type: "url", urls: o.url.urls.split(/\s+/).filter(Boolean).slice(0, 200), follow_links: o.url.follow_links });
   }
   return sources;
 }
