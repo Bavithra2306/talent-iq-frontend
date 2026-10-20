@@ -98,8 +98,8 @@ export const api = {
   sharedWithMe: async (params: Params) => (await apiClient.get<ShortlistEntry[]>(`${v1}/review`, { params: clean(params) })).data,
   decide: async (entryId: string, decision: "approved" | "rejected", comment: string) =>
     (await apiClient.post<ShortlistEntry>(`${v1}/review/${entryId}/decision`, { decision, comment: comment || null })).data,
-  scheduleInterview: async (entryId: string) =>
-    (await apiClient.post<ShortlistEntry>(`${v1}/review/${entryId}/schedule-interview`)).data,
+  scheduleInterviews: async (jobId?: string) =>
+    (await apiClient.post<{ scheduled: number }>(`${v1}/review/schedule-interviews`, { job_id: jobId || null })).data,
 
   // logs
   logs: async (params: Params) => (await apiClient.get<Paged<LogEntry>>(`${v1}/logs`, { params: clean(params) })).data,

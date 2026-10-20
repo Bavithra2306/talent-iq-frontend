@@ -66,7 +66,7 @@ function RecruiterHome() {
     <div className="stack">
       <div className="grid grid-4">
         <Stat icon={<Briefcase size={15} />} label="Open jobs" value={jobs.data?.total} />
-        <Stat icon={<Users size={15} />} label="Candidates" value={candidates.data?.total} hint="Resumes read so far" />
+        <Stat icon={<Users size={15} />} label="Resumes" value={candidates.data?.total} hint="Resumes read so far" />
         <Stat icon={<ListChecks size={15} />} label="Shortlisted" value={shortlisted.data?.total} hint="Waiting to be shared or reviewed" />
         <Stat icon={<ClipboardCheck size={15} />} label="Approved" value={decided.data?.total} hint="By hiring managers" />
       </div>
@@ -80,16 +80,16 @@ function RecruiterHome() {
           <h2>Quick actions</h2>
           <div className="grid grid-2">
             <Link to="/jobs/new" className="btn"><Plus /> New job</Link>
-            <Link to="/candidates" className="btn"><Upload /> Upload resumes</Link>
+            <Link to="/resumes" className="btn"><Upload /> Upload resumes</Link>
             <Link to="/sourcing" className="btn"><Globe /> Find resumes online</Link>
             <Link to="/shortlists" className="btn"><ListChecks /> Find best matches</Link>
           </div>
           <div>
-            <h3 style={{ margin: "6px 0 10px" }}>Candidates by field</h3>
+            <h3 style={{ margin: "6px 0 10px" }}>Resumes by field</h3>
             {categories.isLoading && <Loading />}
             <div className="chips">
               {categories.data?.map((c) => c.category && (
-                <Link key={c.category} to="/candidates" className="chip">{c.category}<span className="count">{c.count}</span></Link>
+                <Link key={c.category} to="/resumes" className="chip">{c.category}<span className="count">{c.count}</span></Link>
               ))}
               {categories.data?.length === 0 && <span className="muted">No candidates yet.</span>}
             </div>

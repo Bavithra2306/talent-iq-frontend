@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import { AcceptInvitationPage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from "../features/auth";
-import { CandidatesPage } from "../features/candidates";
+import { ResumesPage } from "../features/candidates";
 import { DashboardPage } from "../features/dashboard";
 import { JobDetailPage, JobNewPage, JobsPage } from "../features/jobs";
 import { LogsPage } from "../features/logs";
@@ -30,7 +30,8 @@ export default function AppRoutes() {
           <Route path="jobs/new" element={<RequireRole roles={["recruiter", "hiring_manager"]}><JobNewPage /></RequireRole>} />
           <Route path="jobs/:id" element={<RequireRole roles={["recruiter", "hiring_manager"]}><JobDetailPage /></RequireRole>} />
           <Route path="jobs/:id/shortlist" element={<RequireRole roles={["recruiter"]}><JobShortlistPage /></RequireRole>} />
-          <Route path="candidates" element={<RequireRole roles={["recruiter"]}><CandidatesPage /></RequireRole>} />
+          <Route path="resumes" element={<RequireRole roles={["recruiter"]}><ResumesPage /></RequireRole>} />
+          <Route path="candidates" element={<Navigate to="/resumes" replace />} />
           <Route path="sourcing" element={<RequireRole roles={["recruiter"]}><SourcingPage /></RequireRole>} />
           <Route path="shortlists" element={<RequireRole roles={["recruiter"]}><ShortlistsPage /></RequireRole>} />
           <Route path="review" element={<RequireRole roles={["hiring_manager"]}><ReviewPage /></RequireRole>} />

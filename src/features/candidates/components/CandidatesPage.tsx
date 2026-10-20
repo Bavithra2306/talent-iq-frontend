@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Search, Upload, Users, X } from "lucide-react";
+import { Download, FileText, Search, Upload, Users, X } from "lucide-react";
 import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
-import { api, openFile } from "../../../services/api";
+import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
 import { errorMessage } from "../../../lib/axios";
 import { MAX_RESUME_FILES, MAX_UPLOAD_MB } from "../../../config/constants";
 import { formatBytes, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
-import BatchProgress from "./BatchProgress";
+import UploadStatus from "./UploadStatus";
 import ReviewQueue from "./ReviewQueue";
 
 const LIMIT = 20;
@@ -17,7 +17,7 @@ function storedBatch(): string | null {
   try { return localStorage.getItem(BATCH_KEY); } catch { return null; }
 }
 
-export default function CandidatesPage() {
+export default function ResumesPage() {
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
@@ -53,17 +53,23 @@ export default function CandidatesPage() {
   const tooMany = files.length > MAX_RESUME_FILES;
   const tooBig = totalBytes > MAX_UPLOAD_MB * 1024 * 1024;
 
+  const totalResumes = categories.data?.reduce((sum, c) => sum + c.count, 0);
+  const clearBatch = () => { setBatchId(null); try { localStorage.removeItem(BATCH_KEY); } catch { /* ignore */ } };
+
   return (
     <>
-      <PageHeader title="Candidates" subtitle="Upload resumes in bulk; they are read, categorised and indexed automatically." />
+      <PageHeader
+        title={<>Resumes {totalResumes !== undefined && <span className="badge brand plain title-count">{totalResumes} total</span>}</>}
+        subtitle="Upload resumes and browse everyone you have."
+      />
 
-      <div className="grid grid-2" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <div className="card-header"><div><h2>Upload resumes</h2><p>PDF, Word or scanned PDF. Up to 150 files, or one zip.</p></div></div>
-          <div className="card-body stack">
-            <FileDrop multiple folders onFiles={addFiles} />
-            {files.length > 0 && (
-              <>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-body stack" style={{ gap: 10 }}>
+          <FileDrop compact multiple folders onFiles={addFiles} hint="PDF, Word or scanned PDF. Up to 150 files, or one zip." />
+          {files.length > 0 && (
+            <div className="spread">
+              <details className="picked">
+                <summary>{files.length} file(s) selected · {formatBytes(totalBytes)}</summary>
                 <div className="file-list">
                   {files.map((f) => (
                     <div key={f.name + f.size} className="file-item">
@@ -72,46 +78,38 @@ export default function CandidatesPage() {
                     </div>
                   ))}
                 </div>
-                <div className="spread">
-                  <span className="muted">{files.length} file(s) · {formatBytes(totalBytes)}</span>
-                  <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
-                    <Upload /> {upload.isPending ? `Uploading ${progress}%` : "Upload & process"}
-                  </button>
-                </div>
-              </>
-            )}
-            {tooMany && <Alert tone="warn">You chose {files.length} files. Please upload at most {MAX_RESUME_FILES} at a time.</Alert>}
-            {tooBig && <Alert tone="warn">These files add up to {formatBytes(totalBytes)}. Please upload at most {MAX_UPLOAD_MB} MB at a time.</Alert>}
-            {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
-            {rejected.length > 0 && (
-              <Alert>
-                <strong>{rejected.length} file(s) not added</strong>
-                <ul className="skipped-list">
-                  {rejected.map((r, i) => <li key={`${r.filename}-${i}`}>{r.filename} — {r.reason}</li>)}
-                </ul>
-              </Alert>
-            )}
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-header">
-            <div><h2>Latest upload</h2><p>Follow each step while your resumes are read.</p></div>
-            {batchId && <button className="btn btn-sm btn-ghost" onClick={() => { setBatchId(null); try { localStorage.removeItem(BATCH_KEY); } catch { /* ignore */ } }}>Clear</button>}
-          </div>
-          <div className="card-body">
-            {batchId ? (
-              <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.batchStatus}
-                             onFinished={() => {
-                               void queryClient.invalidateQueries({ queryKey: ["candidates"] });
-                               void queryClient.invalidateQueries({ queryKey: ["categories"] });
-                               void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
-                             }} />
-            ) : <p className="muted">Nothing running. Upload resumes to start.</p>}
-          </div>
+              </details>
+              <div className="row">
+                <button className="btn btn-ghost btn-sm" onClick={() => setFiles([])}>Clear</button>
+                <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
+                  <Upload /> {upload.isPending ? `Uploading ${progress}%` : "Upload"}
+                </button>
+              </div>
+            </div>
+          )}
+          {tooMany && <Alert tone="warn">You chose {files.length} files. Please upload at most {MAX_RESUME_FILES} at a time.</Alert>}
+          {tooBig && <Alert tone="warn">These files add up to {formatBytes(totalBytes)}. Please upload at most {MAX_UPLOAD_MB} MB at a time.</Alert>}
+          {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
+          {rejected.length > 0 && (
+            <Alert>
+              <strong>{rejected.length} file(s) not added</strong>
+              <ul className="skipped-list">
+                {rejected.map((r, i) => <li key={`${r.filename}-${i}`}>{r.filename} — {r.reason}</li>)}
+              </ul>
+            </Alert>
+          )}
+          {batchId && (
+            <UploadStatus key={batchId} batchId={batchId} onClose={clearBatch}
+                          onFinished={() => {
+                            void queryClient.invalidateQueries({ queryKey: ["candidates"] });
+                            void queryClient.invalidateQueries({ queryKey: ["categories"] });
+                            void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
+                          }} />
+          )}
         </div>
       </div>
 
-      <ReviewQueue origin="upload" />
+      <ReviewQueue origin="all" />
 
       <div className="card">
         <div className="toolbar" style={{ display: "block" }}>
@@ -150,7 +148,7 @@ export default function CandidatesPage() {
         </div>
         {list.isLoading && <Loading />}
         {list.isError && <div className="card-body"><Alert tone="error">{errorMessage(list.error)}</Alert></div>}
-        {list.data?.items.length === 0 && <Empty title="No candidates found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}
+        {list.data?.items.length === 0 && <Empty title="No resumes found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
@@ -204,7 +202,10 @@ function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const c = detail.data;
   return (
     <Drawer title={c?.name ?? "Candidate"} onClose={onClose}
-            footer={<button className="btn btn-primary" onClick={() => void openFile(`/api/v1/candidates/${id}/resume`)}><FileText /> Open resume</button>}>
+            footer={<>
+              <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}><Download /> Download</button>
+              <button className="btn btn-primary" onClick={() => void openFile(`/api/v1/candidates/${id}/resume`)}><FileText /> View resume</button>
+            </>}>
       {detail.isLoading && <Loading />}
       {detail.isError && <Alert tone="error">{errorMessage(detail.error)}</Alert>}
       {c && (

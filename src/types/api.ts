@@ -111,6 +111,7 @@ export interface BatchStatus {
   seconds: number | null;
   embeddings_pending: number | null;
   embeddings_note: string | null;
+  needs_review?: number | null;
   failures: { filename: string; reason: string }[];
   events: PipelineEvent[];
 }
@@ -177,6 +178,7 @@ export interface ShortlistEntry {
   scores: { skills: number | null; role: number | null; experience: number | null; education: number | null };
   breakdown: Record<"skills" | "role" | "experience" | "education", BreakdownPart> | null;
   explanation: Explanation | null;
+  interview_scheduled_at?: string | null;
   notes_by_recruiter: string | null;
   shared_by: string | null;
   shared_to: string | null;

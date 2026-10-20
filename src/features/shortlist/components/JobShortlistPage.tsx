@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, History, ListChecks, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2, X } from "lucide-react";
+import { FileText, History, ListChecks, PenLine, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2, X } from "lucide-react";
 import {
   Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreBar, StageTimeline, StatusBadge, TagInput, useToast,
 } from "../../../components/ui";
@@ -70,6 +70,11 @@ export default function JobShortlistPage() {
     if (list.data && !weights) setWeights(list.data.weights);
   }, [list.data, weights]);
 
+  const picked = useQuery({
+    queryKey: ["shortlist", id, "shortlisted"],
+    queryFn: () => api.shortlist(id, { status: "shortlisted", sort: "score", order: "desc", limit: 200 }),
+  });
+
   const interpret = useMutation({ mutationFn: () => api.parseFilter(nlText), onSuccess: setParsed });
   const applyParsed = (p: ParsedFilter) => {
     const f = p.filters;
@@ -102,7 +107,11 @@ export default function JobShortlistPage() {
   });
   const notes = useMutation({
     mutationFn: ({ entryId, text }: { entryId: string; text: string }) => api.setNotes(entryId, text),
-    onSuccess: (entry) => { setOpenEntry(entry); void queryClient.invalidateQueries({ queryKey: ["shortlist", id] }); toast("Notes saved.", "success"); },
+    onSuccess: (entry) => {
+      setOpenEntry((current) => (current ? entry : current));
+      void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
+      toast("Note saved.", "success");
+    },
   });
   const toggle = useMutation({
     mutationFn: ({ entryId, on }: { entryId: string; on: boolean }) => api.toggleShortlist(entryId, on),
@@ -111,7 +120,7 @@ export default function JobShortlistPage() {
   });
 
   const sum = weights ? weights.skill_pct + weights.role_pct + weights.exp_pct + weights.edu_pct : 100;
-  const shortlisted = useMemo(() => list.data?.items.filter((e) => e.status === "shortlisted").length ?? 0, [list.data]);
+  const toShare = useMemo(() => picked.data?.items.filter((e) => !e.shared_to).length ?? 0, [picked.data]);
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
   const s = runStatus.data;
 
@@ -123,12 +132,7 @@ export default function JobShortlistPage() {
       <PageHeader
         title={`Shortlist · ${job.data.title}`}
         subtitle={`${job.data.category ?? "Any category"} · ${job.data.skills?.length ?? 0} required skills · ${job.data.experience_years ?? 0}+ yrs · ${job.data.education ?? "no education requirement"}`}
-        actions={
-          <>
-            <button className="btn" onClick={() => setHistory(true)}><History /> Review history</button>
-            <button className="btn btn-primary" disabled={!shortlisted} onClick={() => setSharing(true)}><Send /> Share with hiring manager</button>
-          </>
-        }
+        actions={<button className="btn" onClick={() => setHistory(true)}><History /> Review history</button>}
       />
 
       <div className="grid grid-2" style={{ marginBottom: 16, alignItems: "start" }}>
@@ -313,6 +317,51 @@ export default function JobShortlistPage() {
         )}
       </div>
 
+      {/* ---- 3. shortlisted: notes, then share ---- */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-header">
+          <div><h2>Shortlisted {picked.data ? `(${picked.data.total})` : ""}</h2>
+            <p>Write why you chose each person, then share them with a hiring manager.</p></div>
+          <button className="btn btn-primary" disabled={!toShare} onClick={() => setSharing(true)}>
+            <Send /> Share with hiring manager{toShare ? ` (${toShare})` : ""}
+          </button>
+        </div>
+        {picked.isLoading && <Loading />}
+        {picked.data?.items.length === 0 && (
+          <Empty title="No one shortlisted yet" icon={<ListChecks />}>Use “Shortlist top K” above, or the star on a result.</Empty>
+        )}
+        {picked.data && picked.data.items.length > 0 && (
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>Candidate</th><th>Total</th><th>Status</th><th style={{ minWidth: 300 }}>Your note</th><th></th></tr></thead>
+              <tbody>
+                {picked.data.items.map((e) => (
+                  <tr key={e.id}>
+                    <td>
+                      <div className="cell-title">{e.name ?? "Name not given"}</div>
+                      <div className="cell-sub">{[e.current_title, formatYears(e.total_years_experience), e.location].filter((x) => x && x !== "—").join(" · ")}</div>
+                    </td>
+                    <td style={{ minWidth: 130 }}><ScoreBar value={e.total_score} /></td>
+                    <td>{e.shared_to ? <span className="badge brand plain">Shared</span> : <StatusBadge status={e.status} />}</td>
+                    <td><NoteCell key={e.id + (e.notes_by_recruiter ?? "")} entry={e} saving={notes.isPending}
+                                  onSave={(text) => notes.mutate({ entryId: e.id, text })} /></td>
+                    <td>
+                      <div className="row" style={{ justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                        <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${e.candidate_id}/resume`)}><FileText /> View</button>
+                        {!e.shared_to && (
+                          <button className="btn btn-sm btn-ghost" disabled={toggle.isPending} title="Remove from the shortlist"
+                                  onClick={() => toggle.mutate({ entryId: e.id, on: false })}><X /></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {openEntry && (
         <Drawer title="Candidate match" onClose={() => setOpenEntry(null)}>
           <EntryDetail key={openEntry.id + (openEntry.notes_by_recruiter ?? "")} entry={openEntry}
@@ -321,10 +370,34 @@ export default function JobShortlistPage() {
                        onSaveNotes={(text) => notes.mutate({ entryId: openEntry.id, text })} />
         </Drawer>
       )}
-      {sharing && <ShareModal jobId={id} count={shortlisted} onClose={() => setSharing(false)}
+      {sharing && <ShareModal jobId={id} count={toShare} onClose={() => setSharing(false)}
                               onShared={() => void queryClient.invalidateQueries({ queryKey: ["shortlist", id] })} />}
       {history && <HistoryModal jobId={id} onClose={() => setHistory(false)} />}
     </>
+  );
+}
+
+/** The recruiter's note on why this person was chosen (sent to the hiring manager). */
+function NoteCell({ entry, saving, onSave }: { entry: ShortlistEntry; saving: boolean; onSave: (text: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(entry.notes_by_recruiter ?? "");
+  if (!editing) {
+    return entry.notes_by_recruiter ? (
+      <div><span className="note-text">{entry.notes_by_recruiter}</span>{" "}
+        <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Edit</button></div>
+    ) : (
+      <button className="btn btn-sm" onClick={() => setEditing(true)}><PenLine /> Add a note</button>
+    );
+  }
+  return (
+    <div className="note-cell">
+      <textarea className="textarea" autoFocus value={text} onChange={(e) => setText(e.target.value)}
+                placeholder="Why did you choose this person? e.g. Strong FastAPI work, can join in 30 days" maxLength={1000} />
+      <div className="row" style={{ marginTop: 6 }}>
+        <button className="btn btn-sm btn-primary" disabled={saving} onClick={() => { onSave(text); setEditing(false); }}>Save</button>
+        <button className="btn btn-sm" onClick={() => { setText(entry.notes_by_recruiter ?? ""); setEditing(false); }}>Cancel</button>
+      </div>
+    </div>
   );
 }
 
@@ -345,7 +418,7 @@ function ShareModal({ jobId, count, onClose, onShared }: { jobId: string; count:
     <Modal title="Share with a hiring manager" onClose={onClose}
            footer={<><button className="btn" onClick={onClose}>Cancel</button>
              <button className="btn btn-primary" disabled={!managerId || share.isPending} onClick={() => share.mutate()}><Send /> Share {count} candidate(s)</button></>}>
-      <p className="muted">The {count} shortlisted candidate(s) are shared with their scores, reasons and your notes.</p>
+      <p className="muted">The {count} shortlisted candidate(s) not shared yet go to the hiring manager with their scores, reasons and your notes.</p>
       {managers.isLoading && <Loading />}
       {managers.data?.length === 0 && <Alert tone="warn">There are no active hiring managers yet. An admin can invite one from Team.</Alert>}
       {managers.data && managers.data.length > 0 && (

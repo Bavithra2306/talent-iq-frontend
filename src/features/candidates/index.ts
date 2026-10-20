@@ -1,1 +1,1 @@
-export { default as CandidatesPage } from "./components/CandidatesPage";
+export { default as ResumesPage } from "./components/CandidatesPage";

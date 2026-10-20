@@ -197,8 +197,8 @@ async function filesFromDrop(dt: DataTransfer): Promise<File[]> {
 }
 
 /** Drop zone. Files are not filtered by name here: the server checks what each file really is. */
-export function FileDrop({ accept, multiple, folders, onFiles, hint }: {
-  accept?: string; multiple?: boolean; folders?: boolean; onFiles: (files: File[]) => void; hint?: string;
+export function FileDrop({ accept, multiple, folders, compact, onFiles, hint }: {
+  accept?: string; multiple?: boolean; folders?: boolean; compact?: boolean; onFiles: (files: File[]) => void; hint?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
@@ -206,7 +206,7 @@ export function FileDrop({ accept, multiple, folders, onFiles, hint }: {
   return (
     <div>
       <div
-        className={`dropzone ${over ? "over" : ""}`}
+        className={`dropzone ${compact ? "compact" : ""} ${over ? "over" : ""}`}
         onClick={() => input.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setOver(true); }}
         onDragLeave={() => setOver(false)}

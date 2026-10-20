@@ -328,3 +328,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .menu button:hover { background: var(--brand-50); color: var(--brand-700); }
 .menu button svg { width: 17px; height: 17px; }
+
+.dropzone.compact { padding: 14px 16px; }
+.dropzone.compact svg { width: 22px; height: 22px; margin-bottom: 2px; }
+.upload-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 12px; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; background: var(--brand-50, #f5f3ff); }
+.picked summary { cursor: pointer; color: var(--ink-500); }
+.picked .file-list { margin-top: 8px; max-height: 180px; overflow: auto; }
+.title-count { font-size: 13px; vertical-align: 4px; margin-left: 6px; }
+.note-cell { margin-top: 6px; }
+.note-cell textarea { width: 100%; min-height: 56px; }
+.note-text { white-space: pre-wrap; }

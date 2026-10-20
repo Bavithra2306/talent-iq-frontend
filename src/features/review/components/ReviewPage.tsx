@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarCheck, Check, ClipboardCheck, Eye, FileText, X } from "lucide-react";
 import {
-  Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreRing, StatusBadge, useToast,
+  Alert, Drawer, Empty, Loading, PageHeader, ScoreRing, StatusBadge, useToast,
 } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
-import { formatYears } from "../../../utils/format";
+import { formatDateTime, formatYears } from "../../../utils/format";
 import type { ShortlistEntry } from "../../../types/api";
 import EntryDetail from "../../shortlist/components/EntryDetail";
 
@@ -15,7 +15,6 @@ const TABS = [
   { value: "shortlisted", label: "To review" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
-  { value: "interview_scheduled", label: "Interview scheduled" },
 ];
 
 /** Hiring manager: candidates recruiters shared with me. */
@@ -25,7 +24,6 @@ export default function ReviewPage() {
   const [jobId, setJobId] = useState("");
   const [status, setStatus] = useState("shortlisted");
   const [open, setOpen] = useState<ShortlistEntry | null>(null);
-  const [rejecting, setRejecting] = useState<ShortlistEntry | null>(null);
 
   const all = useQuery({ queryKey: ["review", "all"], queryFn: () => api.sharedWithMe({}) });
   const entries = useQuery({ queryKey: ["review", jobId, status], queryFn: () => api.sharedWithMe({ job_id: jobId, status }) });
@@ -42,20 +40,22 @@ export default function ReviewPage() {
 
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ["review"] });
   const decide = useMutation({
-    mutationFn: ({ entry, decision, comment }: { entry: ShortlistEntry; decision: "approved" | "rejected"; comment: string }) =>
-      api.decide(entry.id, decision, comment),
-    onSuccess: (e) => { refresh(); setRejecting(null); toast(`${e.name ?? "Candidate"} ${e.status}.`, "success"); },
+    mutationFn: ({ entry, decision }: { entry: ShortlistEntry; decision: "approved" | "rejected" }) =>
+      api.decide(entry.id, decision, ""),
+    onSuccess: (e) => { refresh(); toast(`${e.name ?? "Candidate"} ${e.status}.`, "success"); },
     onError: (err) => toast(errorMessage(err), "error"),
   });
-  const interview = useMutation({
-    mutationFn: (entry: ShortlistEntry) => api.scheduleInterview(entry.id),
-    onSuccess: (e) => { refresh(); toast(`Interview marked as scheduled for ${e.name ?? "the candidate"}.`, "success"); },
+  const schedule = useMutation({
+    mutationFn: () => api.scheduleInterviews(jobId),
+    onSuccess: (r) => { refresh(); toast(`Interviews scheduled for ${r.scheduled} approved candidate(s).`, "success"); },
     onError: (err) => toast(errorMessage(err), "error"),
   });
+  // Approved candidates (in the chosen job) whose interview isn't scheduled yet.
+  const waiting = (all.data ?? []).filter((e) => e.status === "approved" && !e.interview_scheduled_at && (!jobId || e.job_id === jobId));
 
   return (
     <>
-      <PageHeader title="Review candidates" subtitle="Candidates that recruiters have shared with you. Approve or reject each one — the recruiter sees your decision straight away." />
+      <PageHeader title="Review candidates" subtitle="Candidates recruiters shared with you. Approve or reject each one, then schedule interviews for everyone approved in one click." />
 
       {jobs.length > 0 && (
         <div className="grid grid-3" style={{ marginBottom: 16 }}>
@@ -97,51 +97,45 @@ export default function ReviewPage() {
             </div>
             {e.explanation?.summary && <p className="small" style={{ lineHeight: 1.6 }}>{e.explanation.summary}</p>}
             {e.notes_by_recruiter && <div className="notes"><strong>Recruiter’s note:</strong> {e.notes_by_recruiter}</div>}
+            {e.interview_scheduled_at && (
+              <div className="row small"><span className="badge green"><CalendarCheck size={13} /> Interview scheduled</span>
+                <span className="muted">{formatDateTime(e.interview_scheduled_at)}</span></div>
+            )}
             <div className="row">
               <button className="btn btn-sm" onClick={() => setOpen(e)}><Eye /> Details</button>
               <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/review/${e.id}/resume`)}><FileText /> Resume</button>
               <span style={{ flex: 1 }} />
-              {e.status !== "interview_scheduled" && (
+              {!e.interview_scheduled_at && (
                 <>
                   <button className="btn btn-sm btn-success" disabled={e.status === "approved" || decide.isPending}
-                          onClick={() => decide.mutate({ entry: e, decision: "approved", comment: "" })}><Check /> Approve</button>
+                          onClick={() => decide.mutate({ entry: e, decision: "approved" })}><Check /> Approve</button>
                   <button className="btn btn-sm btn-danger" disabled={e.status === "rejected" || decide.isPending}
-                          onClick={() => setRejecting(e)}><X /> Reject</button>
+                          onClick={() => { if (window.confirm(`Reject ${e.name ?? "this candidate"}?`)) decide.mutate({ entry: e, decision: "rejected" }); }}>
+                    <X /> Reject
+                  </button>
                 </>
-              )}
-              {e.status === "approved" && (
-                <button className="btn btn-sm btn-primary" disabled={interview.isPending} onClick={() => interview.mutate(e)}>
-                  <CalendarCheck /> Schedule interview
-                </button>
               )}
             </div>
           </div>
         ))}
       </div>
 
+      {(status === "approved" || status === "") && waiting.length > 0 && (
+        <div className="card card-pad spread" style={{ marginTop: 16 }}>
+          <div><strong>{waiting.length} approved candidate(s)</strong> are waiting for an interview{jobId ? " for this job" : ""}.
+            <div className="muted small">One click schedules all of them. Their status stays “Approved”.</div></div>
+          <button className="btn btn-primary" disabled={schedule.isPending}
+                  onClick={() => { if (window.confirm(`Schedule interviews for all ${waiting.length} approved candidate(s)?`)) schedule.mutate(); }}>
+            <CalendarCheck /> Schedule interview for all approved
+          </button>
+        </div>
+      )}
+
       {open && (
         <Drawer title="Candidate details" onClose={() => setOpen(null)}>
           <EntryDetail entry={open} onOpenResume={() => void openFile(`/api/v1/review/${open.id}/resume`)} />
         </Drawer>
       )}
-      {rejecting && (
-        <RejectModal entry={rejecting} busy={decide.isPending} onClose={() => setRejecting(null)}
-                     onConfirm={(comment) => decide.mutate({ entry: rejecting, decision: "rejected", comment })} />
-      )}
     </>
-  );
-}
-
-function RejectModal({ entry, busy, onClose, onConfirm }: {
-  entry: ShortlistEntry; busy: boolean; onClose: () => void; onConfirm: (comment: string) => void;
-}) {
-  const [comment, setComment] = useState("");
-  return (
-    <Modal title={`Reject ${entry.name ?? "candidate"}?`} onClose={onClose}
-           footer={<><button className="btn" onClick={onClose}>Cancel</button>
-             <button className="btn btn-danger" disabled={busy} onClick={() => onConfirm(comment)}>Reject</button></>}>
-      <div className="field"><label htmlFor="why">Reason (optional, shared with the recruiter)</label>
-        <textarea id="why" className="textarea" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="e.g. Needs more FastAPI experience" /></div>
-    </Modal>
   );
 }
