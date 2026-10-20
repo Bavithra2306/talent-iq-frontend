@@ -1,162 +1,130 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, ClipboardCheck, Globe, ListChecks, Plus, Upload, Users } from "lucide-react";
+import { ClipboardCheck, FilePlus2, ListChecks, ScrollText, Upload, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
-import { useSession } from "../../../app/session";
-import { Alert, Loading, PageHeader, ScoreBar, StageBadge, StatusBadge } from "../../../components/ui";
+import { ROLE_LABEL, useSession } from "../../../app/session";
+import { Alert } from "../../../components/ui";
 import { api } from "../../../services/api";
-import { describeAction, describeArea, formatDateTime, formatYears } from "../../../utils/format";
+import { describeAction, describeArea, formatDateTime } from "../../../utils/format";
 
-function Stat({ label, value, hint, icon }: { label: string; value: ReactNode; hint?: string; icon: ReactNode }) {
-  return (
-    <div className="card stat">
-      <div className="stat-label">{icon}{label}</div>
-      <div className="stat-value">{value ?? "—"}</div>
-      {hint && <div className="stat-hint">{hint}</div>}
-    </div>
-  );
-}
-
-function RecentActivity() {
-  const logs = useQuery({ queryKey: ["logs", "recent"], queryFn: () => api.logs({ only_stages: true, limit: 8 }), refetchInterval: 10000 });
-  return (
-    <div className="card">
-      <div className="card-header"><h2>Recent activity</h2><Link to="/logs">See all</Link></div>
-      {logs.isLoading && <Loading />}
-      {logs.data?.items.length === 0 && <div className="card-body muted">Nothing has happened yet.</div>}
-      <div className="table-wrap">
-        <table className="table">
-          <tbody>
-            {logs.data?.items.map((l) => (
-              <tr key={l.id}>
-                <td className="muted" style={{ whiteSpace: "nowrap" }}>{formatDateTime(l.at)}</td>
-                <td><StageBadge stage={l.stage} /></td>
-                <td>{l.action ? describeAction(l.action) : describeArea(l.category)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
+/** Home: a greeting, four numbers, three actions and the latest activity. Nothing else. */
 export default function DashboardPage() {
   const { user } = useSession();
   const first = (user.name ?? user.email).split(/[\s@]/)[0];
+  const today = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   return (
-    <>
-      <PageHeader title={`Hello, ${first}`} subtitle="Here is what is happening in TalentIQ." />
+    <div className="home">
+      <div className="home-hello">
+        <h1>Hello, {first}</h1>
+        <p>{today} · {ROLE_LABEL[user.role]}</p>
+      </div>
       {user.role === "recruiter" && <RecruiterHome />}
       {user.role === "hiring_manager" && <ManagerHome />}
       {user.role === "admin" && <AdminHome />}
-    </>
+    </div>
+  );
+}
+
+function Tile({ label, value, to }: { label: string; value: number | undefined; to: string }) {
+  return (
+    <Link to={to} className="home-tile">
+      <span className="home-tile-value">{value ?? "—"}</span>
+      <span className="home-tile-label">{label}</span>
+    </Link>
+  );
+}
+
+function Action({ to, icon, label, primary }: { to: string; icon: ReactNode; label: string; primary?: boolean }) {
+  return <Link to={to} className={`btn home-action ${primary ? "btn-primary" : ""}`}>{icon} {label}</Link>;
+}
+
+function RecentActivity() {
+  const logs = useQuery({ queryKey: ["logs", "recent"], queryFn: () => api.logs({ only_stages: true, limit: 5 }), refetchInterval: 15000 });
+  if (!logs.data?.items.length) return null;
+  return (
+    <div className="card home-activity">
+      <div className="card-header"><h2>Recent activity</h2><Link to="/logs">See all</Link></div>
+      <ul>
+        {logs.data.items.map((l) => (
+          <li key={l.id}>
+            <span>{l.action ? describeAction(l.action) : describeArea(l.category)}</span>
+            <time>{formatDateTime(l.at)}</time>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 function RecruiterHome() {
+  const resumes = useQuery({ queryKey: ["candidates", "count"], queryFn: () => api.listCandidates({ limit: 1 }) });
   const jobs = useQuery({ queryKey: ["jobs", "open-count"], queryFn: () => api.listJobs({ status: "open", limit: 1 }) });
-  const candidates = useQuery({ queryKey: ["candidates", "count"], queryFn: () => api.listCandidates({ limit: 1 }) });
   const shortlisted = useQuery({ queryKey: ["all-shortlists", "count"], queryFn: () => api.allShortlists({ status: "shortlisted", limit: 1 }) });
-  const decided = useQuery({ queryKey: ["all-shortlists", "approved-count"], queryFn: () => api.allShortlists({ status: "approved", limit: 1, include_unranked: true }) });
-  const categories = useQuery({ queryKey: ["categories"], queryFn: api.categories });
+  const review = useQuery({ queryKey: ["resume-review"], queryFn: api.reviewFiles });
   const quota = useQuery({ queryKey: ["quota"], queryFn: api.embeddingQuota, refetchInterval: 60000 });
-
   return (
-    <div className="stack">
-      <div className="grid grid-4">
-        <Stat icon={<Briefcase size={15} />} label="Open jobs" value={jobs.data?.total} />
-        <Stat icon={<Users size={15} />} label="Resumes" value={candidates.data?.total} hint="Resumes read so far" />
-        <Stat icon={<ListChecks size={15} />} label="Shortlisted" value={shortlisted.data?.total} hint="Waiting to be shared or reviewed" />
-        <Stat icon={<ClipboardCheck size={15} />} label="Approved" value={decided.data?.total} hint="By hiring managers" />
+    <>
+      <div className="home-tiles">
+        <Tile label="Resumes" value={resumes.data?.total} to="/resumes" />
+        <Tile label="Open jobs" value={jobs.data?.total} to="/jobs" />
+        <Tile label="Shortlisted" value={shortlisted.data?.total} to="/shortlists" />
+        <Tile label="Need your review" value={review.data?.length} to="/resumes" />
+      </div>
+      <div className="home-actions">
+        <Action to="/resumes" icon={<Upload />} label="Upload resumes" primary />
+        <Action to="/jobs/new" icon={<FilePlus2 />} label="New job description" />
+        <Action to="/shortlists" icon={<ListChecks />} label="Start matching" />
       </div>
       {quota.data?.paused && (
-        <Alert tone="warn">
-          Today’s free AI search limit is used up. New resumes are still read and can be matched, and they will be fully indexed after {quota.data.resumes_at}.
-        </Alert>
+        <Alert tone="warn">Today’s free search limit is used up. New resumes are still read; they are fully searchable after {quota.data.resumes_at}.</Alert>
       )}
-      <div className="grid grid-2" style={{ alignItems: "start" }}>
-        <div className="card card-pad stack">
-          <h2>Quick actions</h2>
-          <div className="grid grid-2">
-            <Link to="/jobs/new" className="btn"><Plus /> New job</Link>
-            <Link to="/resumes" className="btn"><Upload /> Upload resumes</Link>
-            <Link to="/sourcing" className="btn"><Globe /> Find resumes online</Link>
-            <Link to="/shortlists" className="btn"><ListChecks /> Find best matches</Link>
-          </div>
-          <div>
-            <h3 style={{ margin: "6px 0 10px" }}>Resumes by field</h3>
-            {categories.isLoading && <Loading />}
-            <div className="chips">
-              {categories.data?.map((c) => c.category && (
-                <Link key={c.category} to="/resumes" className="chip">{c.category}<span className="count">{c.count}</span></Link>
-              ))}
-              {categories.data?.length === 0 && <span className="muted">No candidates yet.</span>}
-            </div>
-          </div>
-        </div>
-        <RecentActivity />
-      </div>
-    </div>
+      <RecentActivity />
+    </>
   );
 }
 
 function ManagerHome() {
   const shared = useQuery({ queryKey: ["review", "all"], queryFn: () => api.sharedWithMe({}) });
-  const navigate = useNavigate();
-  const count = (s: string) => shared.data?.filter((e) => e.status === s).length ?? 0;
-  const toReview = shared.data?.filter((e) => e.status === "shortlisted") ?? [];
+  const count = (fn: (s: string, scheduled: boolean) => boolean) =>
+    shared.data ? shared.data.filter((e) => fn(e.status, Boolean(e.interview_scheduled_at))).length : undefined;
   return (
-    <div className="stack">
-      <div className="grid grid-4">
-        <Stat icon={<ClipboardCheck size={15} />} label="To review" value={shared.data ? count("shortlisted") : undefined} />
-        <Stat icon={<ClipboardCheck size={15} />} label="Approved" value={shared.data ? count("approved") : undefined} />
-        <Stat icon={<ClipboardCheck size={15} />} label="Rejected" value={shared.data ? count("rejected") : undefined} />
-        <Stat icon={<ClipboardCheck size={15} />} label="Interviews" value={shared.data ? count("interview_scheduled") : undefined} />
+    <>
+      <div className="home-tiles">
+        <Tile label="To review" value={count((s) => s === "shortlisted")} to="/review" />
+        <Tile label="Approved" value={count((s) => s === "approved")} to="/review" />
+        <Tile label="Interviews scheduled" value={count((_, scheduled) => scheduled)} to="/review" />
+        <Tile label="Rejected" value={count((s) => s === "rejected")} to="/review" />
       </div>
-      <div className="card">
-        <div className="card-header">
-          <div><h2>Waiting for your review</h2><p>Shortlisted candidates that recruiters shared with you.</p></div>
-          <div className="page-actions">
-            <Link to="/jobs/new" className="btn"><Plus /> Create a job</Link>
-            <Link to="/review" className="btn btn-primary"><ClipboardCheck /> Review all</Link>
-          </div>
-        </div>
-        {shared.isLoading && <Loading />}
-        {shared.data && toReview.length === 0 && (
-          <div className="card-body muted">Nothing to review right now. When a recruiter shares a shortlist, it shows up here.</div>
-        )}
-        {toReview.length > 0 && (
-          <div className="table-wrap">
-            <table className="table">
-              <tbody>
-                {toReview.slice(0, 6).map((e) => (
-                  <tr key={e.id} className="clickable" onClick={() => navigate("/review")}>
-                    <td><div className="cell-title">{e.name ?? "Name not given"}</div>
-                      <div className="cell-sub">{[e.current_title, formatYears(e.total_years_experience)].filter((x) => x && x !== "—").join(" · ")}</div></td>
-                    <td>{e.job_title}</td>
-                    <td style={{ minWidth: 150 }}><ScoreBar value={e.total_score} /></td>
-                    <td><StatusBadge status={e.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div className="home-actions">
+        <Action to="/review" icon={<ClipboardCheck />} label="Review candidates" primary />
+        <Action to="/jobs/new" icon={<FilePlus2 />} label="New job description" />
+        <Action to="/jobs" icon={<ListChecks />} label="See jobs" />
       </div>
-    </div>
+    </>
   );
 }
 
 function AdminHome() {
+  const team = useQuery({
+    queryKey: ["team"],
+    queryFn: async () => (await Promise.all((["admin", "recruiter", "hiring_manager"] as const).map((r) => api.directory(r)))).flat(),
+  });
+  const count = (fn: (role: string, status: string) => boolean) =>
+    team.data ? team.data.filter((m) => fn(m.role, m.status)).length : undefined;
   return (
-    <div className="grid grid-2" style={{ alignItems: "start" }}>
-      <div className="card card-pad stack">
-        <h2>Quick actions</h2>
-        <Link to="/team" className="btn btn-primary"><Users /> Invite a recruiter or hiring manager</Link>
-        <Link to="/logs" className="btn">See the activity log</Link>
+    <>
+      <div className="home-tiles">
+        <Tile label="Recruiters" value={count((r, s) => r === "recruiter" && s !== "invite_sent")} to="/team" />
+        <Tile label="Hiring managers" value={count((r, s) => r === "hiring_manager" && s !== "invite_sent")} to="/team" />
+        <Tile label="Invites not accepted" value={count((_, s) => s === "invite_sent")} to="/team" />
+        <Tile label="Not signed in yet" value={count((_, s) => s === "pending")} to="/team" />
+      </div>
+      <div className="home-actions">
+        <Action to="/team" icon={<UserPlus />} label="Invite someone" primary />
+        <Action to="/logs" icon={<ScrollText />} label="Activity log" />
+        <Action to="/profile" icon={<ClipboardCheck />} label="My profile" />
       </div>
       <RecentActivity />
-    </div>
+    </>
   );
 }

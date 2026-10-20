@@ -201,7 +201,6 @@ export function FileDrop({ accept, multiple, folders, compact, onFiles, hint }: 
   accept?: string; multiple?: boolean; folders?: boolean; compact?: boolean; onFiles: (files: File[]) => void; hint?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const folderInput = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   return (
     <div>
@@ -223,14 +222,6 @@ export function FileDrop({ accept, multiple, folders, compact, onFiles, hint }: 
         <input ref={input} type="file" accept={accept} multiple={multiple} hidden
                onChange={(e) => { onFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
       </div>
-      {folders && (
-        <div style={{ marginTop: 8 }}>
-          <button type="button" className="btn btn-sm" onClick={() => folderInput.current?.click()}>Choose a folder</button>
-          <input ref={folderInput} type="file" hidden multiple
-                 {...({ webkitdirectory: "" } as Record<string, string>)}
-                 onChange={(e) => { onFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
-        </div>
-      )}
     </div>
   );
 }

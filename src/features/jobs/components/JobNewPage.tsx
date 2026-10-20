@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, PenLine, Sparkles } from "lucide-react";
@@ -19,7 +20,18 @@ export default function JobNewPage() {
 
   const extract = useMutation({ mutationFn: (file: File) => api.extractJd(file), onSuccess: setExtracted });
   const create = useMutation({
-    mutationFn: (job: JobInput) => api.createJob(job),
+    mutationFn: async (job: JobInput) => {
+      try {
+        return await api.createJob(job);
+      } catch (err) {
+        // Same title and category as an existing job: ask before saving a second one.
+        const data = axios.isAxiosError(err) ? (err.response?.data as { code?: string; detail?: string } | undefined) : undefined;
+        if (data?.code === "duplicate_job" && window.confirm(data.detail ?? "A job with this name already exists. Save anyway?")) {
+          return await api.createJob(job, true);
+        }
+        throw err;
+      }
+    },
     onSuccess: (job) => {
       void queryClient.invalidateQueries({ queryKey: ["jobs"] });
       toast("Job saved.", "success");
@@ -76,11 +88,15 @@ export default function JobNewPage() {
           </div>
           <div className="card-body stack">
             {extracted.warnings.map((w) => <Alert key={w} tone="warn">{w}</Alert>)}
-            {extracted.existing_job_id && (
-              <Alert>A job already uses this job description: <Link to={`/jobs/${extracted.existing_job_id}`}>open it</Link>.</Alert>
+            {extracted.existing_job_id ? (
+              <Alert tone="warn">
+                This job description was uploaded before and is already used by a job, so it can't be saved again.{" "}
+                <Link to={`/jobs/${extracted.existing_job_id}`}>Open that job</Link>.
+              </Alert>
+            ) : (
+              <JobForm key={extracted.document_id} initial={draftAsInput} submitLabel="Save job"
+                       busy={create.isPending} onSubmit={(job) => create.mutate({ ...job, jd_id: extracted.document_id })} />
             )}
-            <JobForm key={extracted.document_id} initial={draftAsInput} submitLabel="Save job"
-                     busy={create.isPending} onSubmit={(job) => create.mutate({ ...job, jd_id: extracted.document_id })} />
           </div>
         </div>
       )}

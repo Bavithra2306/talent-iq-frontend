@@ -41,7 +41,9 @@ export const api = {
       headers: { "Content-Type": "multipart/form-data" },
     })).data;
   },
-  createJob: async (body: JobInput) => (await apiClient.post<Job>(`${v1}/jobs`, body)).data,
+  createJob: async (body: JobInput, confirmDuplicate = false) =>
+    (await apiClient.post<Job>(`${v1}/jobs`, body, { params: confirmDuplicate ? { confirm_duplicate: true } : {} })).data,
+  deleteJob: async (id: string) => { await apiClient.delete(`${v1}/jobs/${id}`); },
   updateJob: async (id: string, body: Partial<JobInput>) => (await apiClient.patch<Job>(`${v1}/jobs/${id}`, body)).data,
 
   // resumes / candidates

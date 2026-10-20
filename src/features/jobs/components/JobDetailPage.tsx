@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, ListChecks, Pencil } from "lucide-react";
+import { Download, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useSession } from "../../../app/session";
 import { Alert, Loading, PageHeader, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
@@ -17,6 +17,18 @@ export default function JobDetailPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const job = useQuery({ queryKey: ["job", id], queryFn: () => api.getJob(id) });
+
+  const navigate = useNavigate();
+  const remove = useMutation({
+    mutationFn: () => api.deleteJob(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      void queryClient.invalidateQueries({ queryKey: ["shortlist"] });
+      toast("Job deleted.", "success");
+      navigate("/jobs");
+    },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
 
   const save = useMutation({
     mutationFn: (body: JobInput) => api.updateJob(id, body),
@@ -42,6 +54,12 @@ export default function JobDetailPage() {
           <>
             <button className="btn" onClick={() => void openFile(`/api/v1/jobs/${id}/view`)}><Download /> View job description</button>
             {!editing && <button className="btn" onClick={() => setEditing(true)}><Pencil /> Edit</button>}
+            {!editing && (
+              <button className="btn btn-danger" disabled={remove.isPending}
+                      onClick={() => { if (window.confirm(`Delete the job "${j.title}"? It disappears from the app, including its matches and shortlist.`)) remove.mutate(); }}>
+                <Trash2 /> Delete
+              </button>
+            )}
             {user.role === "recruiter" && (
               <Link className="btn btn-primary" to={`/jobs/${id}/shortlist`}><ListChecks /> Start matching</Link>
             )}
