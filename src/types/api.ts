@@ -16,6 +16,7 @@ export interface Job {
   id: string;
   jd_id: string;
   title: string;
+  about_role?: string | null;
   category: string | null;
   industry: string | null;
   experience_years: number | null;
@@ -32,6 +33,7 @@ export interface Job {
 
 export interface JobDraft {
   title: string | null;
+  about_role?: string | null;
   category: string | null;
   industry: string | null;
   experience_years: number | null;
@@ -51,6 +53,7 @@ export interface JobExtractResponse {
 
 export interface JobInput {
   title: string;
+  about_role?: string | null;
   category: string | null;
   industry: string | null;
   experience_years: number | null;

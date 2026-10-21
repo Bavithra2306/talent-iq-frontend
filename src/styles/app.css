@@ -373,3 +373,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .failed-files { background: #fff; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
 .failed-files ul { margin: 6px 0 0; padding-left: 18px; max-height: 180px; overflow: auto; }
 .found-count { font-size: 18px; font-weight: 650; color: var(--green-600, #16a34a); }
+
+.list-count { padding: 12px 20px 4px; font-weight: 650; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+
+.about-role { margin-bottom: 14px; }
+.about-role p { margin: 4px 0 0; line-height: 1.6; white-space: pre-wrap; }
+.status-counts { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px 0; }

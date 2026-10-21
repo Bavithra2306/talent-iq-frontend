@@ -83,6 +83,10 @@ export default function JobDetailPage() {
         <div className="grid grid-2">
           <div className="card card-pad">
             <h3 style={{ marginBottom: 14 }}>Details</h3>
+            <div className="about-role">
+              <div className="muted small">About the role</div>
+              <p>{j.about_role || "Not written yet. Use Edit to add a short description of the role."}</p>
+            </div>
             <dl className="kv">
               <dt>Category</dt><dd>{j.category ?? "—"}</dd>
               <dt>Industry</dt><dd>{j.industry ?? "—"}</dd>

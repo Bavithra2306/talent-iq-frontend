@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { ROLE_LABEL, useSession } from "../../../app/session";
 import { Alert } from "../../../components/ui";
 import { api } from "../../../services/api";
-import { describeAction, describeArea, formatDateTime } from "../../../utils/format";
 
 /** Home: a greeting, four numbers, three actions and the latest activity. Nothing else. */
 export default function DashboardPage() {
@@ -38,24 +37,6 @@ function Action({ to, icon, label, primary }: { to: string; icon: ReactNode; lab
   return <Link to={to} className={`btn home-action ${primary ? "btn-primary" : ""}`}>{icon} {label}</Link>;
 }
 
-function RecentActivity() {
-  const logs = useQuery({ queryKey: ["logs", "recent"], queryFn: () => api.logs({ only_stages: true, limit: 5 }), refetchInterval: 15000 });
-  if (!logs.data?.items.length) return null;
-  return (
-    <div className="card home-activity">
-      <div className="card-header"><h2>Recent activity</h2><Link to="/logs">See all</Link></div>
-      <ul>
-        {logs.data.items.map((l) => (
-          <li key={l.id}>
-            <span>{l.action ? describeAction(l.action) : describeArea(l.category)}</span>
-            <time>{formatDateTime(l.at)}</time>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 function RecruiterHome() {
   const resumes = useQuery({ queryKey: ["candidates", "count"], queryFn: () => api.listCandidates({ limit: 1 }) });
   const jobs = useQuery({ queryKey: ["jobs", "open-count"], queryFn: () => api.listJobs({ status: "open", limit: 1 }) });
@@ -78,7 +59,6 @@ function RecruiterHome() {
       {quota.data?.paused && (
         <Alert tone="warn">Today’s free search limit is used up. New resumes are still read; they are fully searchable after {quota.data.resumes_at}.</Alert>
       )}
-      <RecentActivity />
     </>
   );
 }
@@ -124,7 +104,6 @@ function AdminHome() {
         <Action to="/logs" icon={<ScrollText />} label="Activity log" />
         <Action to="/profile" icon={<ClipboardCheck />} label="My profile" />
       </div>
-      <RecentActivity />
     </>
   );
 }

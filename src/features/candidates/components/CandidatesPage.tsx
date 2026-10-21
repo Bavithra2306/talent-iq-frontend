@@ -65,7 +65,7 @@ export default function ResumesPage() {
           {totalResumes !== undefined && quota.data && (
             <span className={`badge plain title-count ${quota.data.resumes_waiting ? "amber" : "green"}`}
                   title="Resumes that can be compared with a job. New resumes get ready automatically every 20 minutes.">
-              Search ready: {Math.max(0, totalResumes - quota.data.resumes_waiting)} of {totalResumes}
+              Ready for matching: {Math.max(0, totalResumes - quota.data.resumes_waiting)} of {totalResumes}
               {quota.data.resumes_waiting > 0 && (quota.data.paused ? ` · the rest after ${quota.data.resumes_at}` : " · the rest within minutes")}
             </span>
           )}</>}
@@ -151,6 +151,12 @@ export default function ResumesPage() {
             <option value="name:asc">Name A–Z</option>
           </select>
         </div>
+        {list.data && (
+          <div className="list-count">
+            {filters.status === "new" ? "New (not matched yet)" : filters.status ? STATUS_LABEL[filters.status as keyof typeof STATUS_LABEL] : "All resumes"}
+            {filters.category && ` · ${filters.category}`} <span className="badge brand plain">{list.data.total}</span>
+          </div>
+        )}
         {list.isLoading && <Loading />}
         {list.isError && <div className="card-body"><Alert tone="error">{errorMessage(list.error)}</Alert></div>}
         {list.data?.items.length === 0 && <Empty title="No resumes found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}
