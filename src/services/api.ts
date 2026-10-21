@@ -55,6 +55,8 @@ export const api = {
       onUploadProgress: (e) => onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0),
     })).data;
   },
+  failedCount: async () => (await apiClient.get<{ count: number }>(`${v1}/resumes/failed`)).data.count,
+  retryFailed: async () => (await apiClient.post<UploadResponse>(`${v1}/resumes/retry-failed`)).data,
   reviewFiles: async () => (await apiClient.get<ReviewFile[]>(`${v1}/resumes/review`)).data,
   acceptReviewFile: async (documentId: string) =>
     (await apiClient.post<{ candidate_id: string; name: string | null; message: string }>(`${v1}/resumes/review/${documentId}/accept`)).data,

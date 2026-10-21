@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Search, Upload, Users, X } from "lucide-react";
+import { Download, FileText, RotateCcw, Search, Upload, Users, X } from "lucide-react";
 import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
 import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
@@ -33,6 +33,18 @@ export default function ResumesPage() {
   const list = useQuery({
     queryKey: ["candidates", filters, offset],
     queryFn: () => api.listCandidates({ ...filters, limit: LIMIT, offset }),
+  });
+  // Resumes stored but never read (the AI or the reader failed): can be run again in one click.
+  const failed = useQuery({ queryKey: ["failed-resumes"], queryFn: api.failedCount, refetchInterval: 60000 });
+  const retry = useMutation({
+    mutationFn: api.retryFailed,
+    onSuccess: (res) => {
+      if (res.batch_id) {
+        setBatchId(res.batch_id);
+        try { localStorage.setItem(BATCH_KEY, res.batch_id); } catch { /* storage unavailable */ }
+      }
+      void queryClient.invalidateQueries({ queryKey: ["failed-resumes"] });
+    },
   });
   const upload = useMutation({
     mutationFn: () => api.uploadResumes(files, setProgress),
@@ -114,8 +126,20 @@ export default function ResumesPage() {
                             void queryClient.invalidateQueries({ queryKey: ["categories"] });
                             void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
                             void queryClient.invalidateQueries({ queryKey: ["quota"] });
+                            void queryClient.invalidateQueries({ queryKey: ["failed-resumes"] });
                           }} />
           )}
+          {!batchId && (failed.data ?? 0) > 0 && (
+            <Alert tone="warn">
+              <div className="spread">
+                <span><strong>{failed.data} resume(s) could not be read</strong> (the AI service was busy or the file failed). Run them again; files that still fail are listed with the reason.</span>
+                <button className="btn btn-sm" disabled={retry.isPending} onClick={() => retry.mutate()}>
+                  <RotateCcw /> {retry.isPending ? "Starting…" : "Retry failed"}
+                </button>
+              </div>
+            </Alert>
+          )}
+          {retry.isError && <Alert tone="error">{errorMessage(retry.error)}</Alert>}
         </div>
       </div>
 

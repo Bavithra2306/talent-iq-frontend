@@ -21,9 +21,9 @@ const WEIGHT_LABELS: [keyof Weights, string][] = [
 
 interface ResultFilters {
   skills: string[]; location: string; min_experience: string; max_experience: string;
-  education: string; min_score: string; status: string;
+  education: string; min_score: string; max_score: string; status: string;
 }
-const NO_FILTERS: ResultFilters = { skills: [], location: "", min_experience: "", max_experience: "", education: "", min_score: "", status: "" };
+const NO_FILTERS: ResultFilters = { skills: [], location: "", min_experience: "", max_experience: "", education: "", min_score: "", max_score: "", status: "" };
 const num = (v: string) => (v === "" ? null : Number(v));
 
 export default function JobShortlistPage() {
@@ -63,7 +63,7 @@ export default function JobShortlistPage() {
     queryFn: () => api.shortlist(id, {
       skills: filters.skills, location: filters.location, education: filters.education,
       min_experience: filters.min_experience, max_experience: filters.max_experience,
-      min_score: filters.min_score, status: filters.status,
+      min_score: filters.min_score, max_score: filters.max_score, status: filters.status,
       sort: "score", order: "desc", limit: 200, ...(preview && weights ? weights : {}),
     }),
   });
@@ -250,7 +250,8 @@ export default function JobShortlistPage() {
           <input className="input" style={{ maxWidth: 110 }} type="number" min={0} placeholder="Min yrs" value={filters.min_experience} onChange={(e) => setFilters({ ...filters, min_experience: e.target.value })} />
           <input className="input" style={{ maxWidth: 110 }} type="number" min={0} placeholder="Max yrs" value={filters.max_experience} onChange={(e) => setFilters({ ...filters, max_experience: e.target.value })} />
           <input className="input" placeholder="Education, e.g. B.Tech" value={filters.education} onChange={(e) => setFilters({ ...filters, education: e.target.value })} />
-          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Min score" value={filters.min_score} onChange={(e) => setFilters({ ...filters, min_score: e.target.value })} />
+          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Score from" value={filters.min_score} onChange={(e) => setFilters({ ...filters, min_score: e.target.value })} />
+          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Score to" value={filters.max_score} onChange={(e) => setFilters({ ...filters, max_score: e.target.value })} />
           <select className="select" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
             <option value="">All statuses</option>
             {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((st) => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}

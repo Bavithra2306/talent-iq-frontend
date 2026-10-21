@@ -10,13 +10,13 @@ import { formatYears, STATUS_LABEL } from "../../../utils/format";
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
   const navigate = useNavigate();
-  const [view, setView] = useState({ job_id: "", status: "shortlisted", location: "", sort: "score", order: "desc" });
+  const [view, setView] = useState({ job_id: "", status: "shortlisted", location: "", min_score: "", max_score: "", sort: "score", order: "desc" });
   // How many candidates have each status (for the chosen job, or all jobs).
   const counts = useQuery({
-    queryKey: ["all-shortlists", "status-counts", view.job_id, view.location],
+    queryKey: ["all-shortlists", "status-counts", view.job_id, view.location, view.min_score, view.max_score],
     queryFn: async () => Object.fromEntries(await Promise.all(
       (Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map(async (st) =>
-        [st, (await api.allShortlists({ job_id: view.job_id, location: view.location, status: st, limit: 1, include_unranked: true })).total] as const),
+        [st, (await api.allShortlists({ job_id: view.job_id, location: view.location, min_score: view.min_score, max_score: view.max_score, status: st, limit: 1, include_unranked: true })).total] as const),
     )),
   });
   const jobs = useQuery({ queryKey: ["jobs", "open-all"], queryFn: () => api.listJobs({ status: "open", limit: 100 }) });
@@ -61,6 +61,8 @@ export default function ShortlistsPage() {
             ))}
           </select>
           <input className="input" placeholder="Location" value={view.location} onChange={(e) => setView({ ...view, location: e.target.value })} />
+          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Score from" value={view.min_score} onChange={(e) => setView({ ...view, min_score: e.target.value })} />
+          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Score to" value={view.max_score} onChange={(e) => setView({ ...view, max_score: e.target.value })} />
           <select className="select" value={`${view.sort}:${view.order}`} onChange={(e) => { const [s, o] = e.target.value.split(":"); setView({ ...view, sort: s, order: o }); }}>
             <option value="score:desc">Highest score</option>
             <option value="experience:desc">Most experience</option>

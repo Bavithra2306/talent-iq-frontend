@@ -11,6 +11,10 @@ const LEVEL: Record<number, { label: string; tone: string }> = {
   0: { label: "Missing", tone: "red" },
 };
 
+const INDUSTRY_LEVEL: Record<number, string> = { 100: "Same industry", 75: "Closely related", 50: "Some overlap", 0: "Different industry" };
+
+const PART_LABEL ={ skills: "Skills", role: "Role & industry", experience: "Experience", education: "Education" } as const;
+
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${Math.round(v * 100)}%`);
 
 function SkillRows({ title, items }: { title: string; items: SkillMatch[] }) {
@@ -65,7 +69,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
           <h3>How the score adds up</h3>
           {(["skills", "role", "experience", "education"] as const).map((k) => (
             <div key={k} className="breakdown-row">
-              <span style={{ textTransform: "capitalize" }}>{k} <span className="muted small">({parts[k].weight}%)</span></span>
+              <span>{PART_LABEL[k]} <span className="muted small">({parts[k].weight}%)</span></span>
               <ScoreBar value={parts[k].score} />
               <span className="muted small" style={{ textAlign: "right" }}>+{parts[k].points} pts</span>
             </div>
@@ -101,6 +105,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
 
       <dl className="kv">
         <dt>Role match</dt><dd>{e.role ? `${LEVEL[e.role.level]?.label ?? e.role.level}${e.role.matched_role ? ` — ${e.role.matched_role}` : ""}` : "—"}</dd>
+        <dt>Industry</dt><dd>{e.industry ? `${INDUSTRY_LEVEL[e.industry.level] ?? e.industry.level}${e.industry.matched_industry ? ` — ${e.industry.matched_industry}` : ""}` : <span className="muted">not compared (job or resume gives no industry)</span>}</dd>
         <dt>Experience</dt><dd>{e.experience?.note ?? "—"}</dd>
         <dt>Education</dt><dd>{e.education?.note ?? "—"}</dd>
         {e.cosine && (e.cosine.skills !== null || e.cosine.role !== null) && <><dt>Profile similarity</dt><dd className="muted">skills {pct(e.cosine.skills)} · job titles {pct(e.cosine.role)}</dd></>}

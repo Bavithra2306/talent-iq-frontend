@@ -150,6 +150,7 @@ export interface Explanation {
   cosine?: { skills: number | null; role: number | null };
   skills?: { required: SkillMatch[]; nice: SkillMatch[]; required_avg: number | null };
   role?: { level: number; matched_role: string | null };
+  industry?: { level: number; matched_industry: string | null } | null;
   experience?: { candidate_years: number | null; required_years: number | null; score: number; note: string };
   education?: { required: string | null; score: number; note: string };
   summary?: string | null;
