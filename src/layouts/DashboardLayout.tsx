@@ -26,7 +26,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: "Hiring",
     items: [
       { to: "/jobs", label: "Jobs", icon: Briefcase, roles: ["recruiter", "hiring_manager"] },
-      { to: "/resumes", label: "Resumes", icon: Users, roles: ["recruiter"] },
+      { to: "/resumes", label: "Resumes", icon: Users, roles: ["recruiter", "hiring_manager"] },
       { to: "/sourcing", label: "Sourcing", icon: Globe, roles: ["recruiter"] },
       { to: "/shortlists", label: "Shortlists", icon: ListChecks, roles: ["recruiter"] },
       { to: "/review", label: "Review", icon: ClipboardCheck, roles: ["hiring_manager"] },
