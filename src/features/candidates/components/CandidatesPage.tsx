@@ -28,6 +28,8 @@ export default function ResumesPage() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const categories = useQuery({ queryKey: ["categories"], queryFn: api.categories });
+  // How many resumes are ready for matching (have their search fingerprints); refreshes every minute.
+  const quota = useQuery({ queryKey: ["quota"], queryFn: api.embeddingQuota, refetchInterval: 60000 });
   const list = useQuery({
     queryKey: ["candidates", filters, offset],
     queryFn: () => api.listCandidates({ ...filters, limit: LIMIT, offset }),
@@ -59,7 +61,14 @@ export default function ResumesPage() {
   return (
     <>
       <PageHeader
-        title={<>Resumes {totalResumes !== undefined && <span className="badge brand plain title-count">{totalResumes} total</span>}</>}
+        title={<>Resumes {totalResumes !== undefined && <span className="badge brand plain title-count">{totalResumes} total</span>}
+          {totalResumes !== undefined && quota.data && (
+            <span className={`badge plain title-count ${quota.data.resumes_waiting ? "amber" : "green"}`}
+                  title="Resumes that can be compared with a job. New resumes get ready automatically every 20 minutes.">
+              Search ready: {Math.max(0, totalResumes - quota.data.resumes_waiting)} of {totalResumes}
+              {quota.data.resumes_waiting > 0 && (quota.data.paused ? ` · the rest after ${quota.data.resumes_at}` : " · the rest within minutes")}
+            </span>
+          )}</>}
         subtitle="Upload resumes and browse everyone you have."
       />
 
@@ -104,6 +113,7 @@ export default function ResumesPage() {
                             void queryClient.invalidateQueries({ queryKey: ["candidates"] });
                             void queryClient.invalidateQueries({ queryKey: ["categories"] });
                             void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
+                            void queryClient.invalidateQueries({ queryKey: ["quota"] });
                           }} />
           )}
         </div>

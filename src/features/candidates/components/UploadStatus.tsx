@@ -20,7 +20,8 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
   const status = useQuery({
     queryKey: ["batch", batchId],
     queryFn: () => api.batchStatus(batchId),
-    refetchInterval: (q) => (q.state.data?.finished ? false : 2500),
+    // Keep polling after the run while resumes are still being made searchable.
+    refetchInterval: (q) => (q.state.data?.finished && !q.state.data.embeddings_pending ? false : 5000),
   });
   const s = status.data;
   const finished = Boolean(s?.finished);
@@ -66,6 +67,12 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
             <span className={s.failed ? "bad" : ""}><strong>{s.failed ?? 0}</strong> failed to read</span>
             {s.seconds !== null && <span className="muted">{Math.round(s.seconds)}s</span>}
           </div>
+          {Boolean(s.embeddings_pending) && (
+            <p className="small muted" style={{ margin: 0 }}>
+              {s.embeddings_pending} resume(s) are still being made searchable. They join matching automatically
+              {s.embeddings_note?.includes("quota") ? " after today's free limit resets (around 05:30)" : " in a few minutes"}.
+            </p>
+          )}
           {Boolean(s.needs_review) && (
             <p className="small muted" style={{ margin: 0 }}>Files that are not resumes are listed under <strong>Needs your review</strong> below.</p>
           )}
