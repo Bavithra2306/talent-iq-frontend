@@ -86,7 +86,6 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
       {e.summary ? (
         <div className="explain">
           <strong>Why this candidate</strong>
-          {e.stale && <span className="badge amber" style={{ marginLeft: 8 }}>Refreshing after weight change</span>}
           <p style={{ marginTop: 6 }}>{e.summary}</p>
           {(e.strengths?.length || e.gaps?.length) ? (
             <div className="row" style={{ marginTop: 10, alignItems: "flex-start" }}>
@@ -95,10 +94,10 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
             </div>
           ) : null}
         </div>
-      ) : <Alert>An AI summary is written once the candidate is shortlisted.</Alert>}
+      ) : <Alert>The AI explanation is not ready yet. Run matching again to write it.</Alert>}
 
       <SkillRows title="Required skills" items={e.skills?.required ?? []} />
-      <SkillRows title="Nice-to-have skills" items={e.skills?.nice ?? []} />
+      <SkillRows title="Nice-to-have skills (not scored, for information)" items={e.skills?.nice ?? []} />
 
       <dl className="kv">
         <dt>Role match</dt><dd>{e.role ? `${LEVEL[e.role.level]?.label ?? e.role.level}${e.role.matched_role ? ` — ${e.role.matched_role}` : ""}` : "—"}</dd>

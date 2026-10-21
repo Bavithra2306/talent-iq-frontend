@@ -148,14 +148,13 @@ export interface Explanation {
   similarity?: number | null;
   reason?: string[];
   cosine?: { skills: number | null; role: number | null };
-  skills?: { required: SkillMatch[]; nice: SkillMatch[]; required_avg: number | null; nice_avg: number | null };
+  skills?: { required: SkillMatch[]; nice: SkillMatch[]; required_avg: number | null };
   role?: { level: number; matched_role: string | null };
   experience?: { candidate_years: number | null; required_years: number | null; score: number; note: string };
   education?: { required: string | null; score: number; note: string };
   summary?: string | null;
   strengths?: string[];
   gaps?: string[];
-  stale?: boolean;
 }
 
 export interface BreakdownPart {
