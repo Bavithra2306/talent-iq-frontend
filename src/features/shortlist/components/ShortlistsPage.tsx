@@ -10,13 +10,13 @@ import { formatYears, STATUS_LABEL } from "../../../utils/format";
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
   const navigate = useNavigate();
-  const [view, setView] = useState({ job_id: "", status: "shortlisted", sort: "score", order: "desc" });
+  const [view, setView] = useState({ job_id: "", status: "shortlisted", location: "", sort: "score", order: "desc" });
   // How many candidates have each status (for the chosen job, or all jobs).
   const counts = useQuery({
-    queryKey: ["all-shortlists", "status-counts", view.job_id],
+    queryKey: ["all-shortlists", "status-counts", view.job_id, view.location],
     queryFn: async () => Object.fromEntries(await Promise.all(
       (Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map(async (st) =>
-        [st, (await api.allShortlists({ job_id: view.job_id, status: st, limit: 1, include_unranked: true })).total] as const),
+        [st, (await api.allShortlists({ job_id: view.job_id, location: view.location, status: st, limit: 1, include_unranked: true })).total] as const),
     )),
   });
   const jobs = useQuery({ queryKey: ["jobs", "open-all"], queryFn: () => api.listJobs({ status: "open", limit: 100 }) });
@@ -49,22 +49,18 @@ export default function ShortlistsPage() {
 
       <div className="card">
         <div className="card-header"><div><h2>All scored candidates</h2><p>Across every job.</p></div></div>
-        <div className="status-counts">
-          {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((st) => (
-            <button key={st} className={`chip ${view.status === st ? "active" : ""}`} onClick={() => setView({ ...view, status: st })}>
-              {STATUS_LABEL[st]}<span className="count">{counts.data?.[st] ?? "…"}</span>
-            </button>
-          ))}
-        </div>
         <div className="toolbar">
           <select className="select" value={view.job_id} onChange={(e) => setView({ ...view, job_id: e.target.value })}>
             <option value="">All jobs</option>
             {jobs.data?.items.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
           </select>
           <select className="select" value={view.status} onChange={(e) => setView({ ...view, status: e.target.value })}>
-            <option value="">All statuses</option>
-            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+            <option value="">All statuses ({counts.data ? Object.values(counts.data).reduce((a, b) => a + b, 0) : "…"})</option>
+            {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((st) => (
+              <option key={st} value={st}>{STATUS_LABEL[st]} ({counts.data?.[st] ?? "…"})</option>
+            ))}
           </select>
+          <input className="input" placeholder="Location" value={view.location} onChange={(e) => setView({ ...view, location: e.target.value })} />
           <select className="select" value={`${view.sort}:${view.order}`} onChange={(e) => { const [s, o] = e.target.value.split(":"); setView({ ...view, sort: s, order: o }); }}>
             <option value="score:desc">Highest score</option>
             <option value="experience:desc">Most experience</option>

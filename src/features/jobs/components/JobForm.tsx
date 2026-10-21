@@ -8,7 +8,7 @@ export const CATEGORIES = [
 ];
 
 export const EMPTY_JOB: JobInput = {
-  title: "", about_role: null, category: null, industry: null, experience_years: null, education: null,
+  title: "", role_name: null, category: null, industry: null, experience_years: null, education: null,
   location: null, work_mode: null, skills: [], nice_to_have_skills: [],
 };
 
@@ -37,11 +37,10 @@ export default function JobForm({ initial, onSubmit, submitLabel, busy, showStat
           <input id="title" className="input" required value={job.title} onChange={(e) => set("title", e.target.value)}
                  placeholder="e.g. Senior Python Backend Developer" />
         </div>
-        <div className="field full">
-          <label htmlFor="about">About the role</label>
-          <textarea id="about" className="textarea" rows={4} value={job.about_role ?? ""}
-                    onChange={(e) => set("about_role", e.target.value || null)}
-                    placeholder="What will this person do? Main responsibilities, in a few sentences." />
+        <div className="field">
+          <label htmlFor="role">Role</label>
+          <input id="role" className="input" value={job.role_name ?? ""} maxLength={80}
+                 onChange={(e) => set("role_name", e.target.value || null)} placeholder="e.g. SDE II, Team Lead" />
         </div>
         <div className="field">
           <label htmlFor="category">Category</label>
