@@ -76,6 +76,8 @@ export const api = {
   parseFilter: async (text: string) => (await apiClient.post<ParsedFilter>(`${v1}/shortlists/nl-filter`, { text })).data,
   startMatching: async (jobId: string) =>
     (await apiClient.post<{ run_id: string }>(`${v1}/jobs/${jobId}/match`)).data,
+  addCandidateToJob: async (jobId: string, candidateId: string) =>
+    (await apiClient.post<{ run_id: string }>(`${v1}/jobs/${jobId}/match`, { extra_candidate_ids: [candidateId] })).data,
   shortlistTopK: async (jobId: string, topK: number, filters: ShortlistFilters, minScore: number | null) =>
     (await apiClient.post<{ shortlisted: number; matching: number }>(`${v1}/jobs/${jobId}/shortlist/top-k`,
       { top_k: topK, filters, min_score: minScore })).data,

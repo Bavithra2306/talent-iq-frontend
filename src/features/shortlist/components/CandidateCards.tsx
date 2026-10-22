@@ -1,7 +1,9 @@
-import { useLayoutEffect, useRef } from "react";
-import { FileText, GitCompare, MapPin, StickyNote } from "lucide-react";
-import { Modal, ScoreRing, StatusBadge } from "../../../components/ui";
-import { openFile } from "../../../services/api";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, GitCompare, MapPin, Plus, StickyNote } from "lucide-react";
+import { Modal, ScoreRing, StatusBadge, useToast } from "../../../components/ui";
+import { api, openFile } from "../../../services/api";
+import { errorMessage } from "../../../lib/axios";
 import { formatYears } from "../../../utils/format";
 import type { ShortlistEntry } from "../../../types/api";
 
@@ -35,6 +37,40 @@ function useFlip(keys: string[]) {
     previous.current = next;
   }, [keys.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
   return container;
+}
+
+/** Decisions belong to one job. This scores the candidate for another job so they can be shortlisted there. */
+function AddToJob({ entry }: { entry: ShortlistEntry }) {
+  const [open, setOpen] = useState(false);
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const jobs = useQuery({ queryKey: ["jobs", "pick"], queryFn: () => api.listJobs({ limit: 100 }), enabled: open });
+  const add = useMutation({
+    mutationFn: (jobId: string) => api.addCandidateToJob(jobId, entry.candidate_id),
+    onSuccess: (_r, jobId) => {
+      const title = jobs.data?.items.find((j) => j.id === jobId)?.title ?? "the job";
+      toast(`${entry.name ?? "The candidate"} is being scored for ${title}. Open that job's shortlist in a minute.`, "success");
+      setOpen(false);
+      window.setTimeout(() => void queryClient.invalidateQueries({ queryKey: ["shortlist"] }), 20000);
+    },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
+  const others = (jobs.data?.items ?? []).filter((j) => j.id !== entry.job_id);
+  return (
+    <span className="add-job">
+      <button className="btn btn-sm btn-icon" title="Add to another job" aria-label="Add to another job" aria-expanded={open} onClick={() => setOpen(!open)}><Plus /></button>
+      {open && (
+        <div className="add-job-menu" role="menu">
+          <strong className="small">Score {entry.name ?? "candidate"} for:</strong>
+          {jobs.isLoading && <span className="muted small">Loading jobs…</span>}
+          {!jobs.isLoading && others.length === 0 && <span className="muted small">No other jobs yet.</span>}
+          {others.map((j) => (
+            <button key={j.id} className="add-job-item" disabled={add.isPending} onClick={() => add.mutate(j.id)}>{j.title}</button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
 }
 
 export function CandidateCards({ items, onOpen, onToggle, toggling, compare, onCompare }: {
@@ -84,6 +120,7 @@ export function CandidateCards({ items, onOpen, onToggle, toggling, compare, onC
             <footer className="cand-foot" onClick={(ev) => ev.stopPropagation()}>
               <span className="status-for"><StatusBadge status={e.status} />{locked && e.job_title && <small className="muted">for {e.job_title}</small>}</span>
               <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                {locked && <AddToJob entry={e} />}
                 <button className={`btn btn-sm btn-icon ${picked ? "btn-primary" : ""}`} title="Compare" aria-pressed={picked} onClick={() => onCompare(e.id)}><GitCompare /></button>
                 <button className="btn btn-sm btn-icon" title="View resume" onClick={() => openFile(`/api/v1/candidates/${e.candidate_id}/resume`, e.name ?? "Resume")}><FileText /></button>
                 <label className="cand-check" title={locked ? `Already ${e.status === "shortlisted" ? "shared" : e.status} for ${e.job_title ?? "this job"}. This applies to this job only; ${e.name ?? "the candidate"} can still be shortlisted for other jobs.` : e.status === "shortlisted" ? "Remove from shortlist" : "Add to shortlist"}>
