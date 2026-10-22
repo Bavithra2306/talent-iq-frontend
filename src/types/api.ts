@@ -249,6 +249,7 @@ export interface DirectoryUser {
   email: string;
   role: Role;
   status: "invite_sent" | "pending" | "active";
+  blocked?: boolean;
 }
 
 export interface SourceInfo {

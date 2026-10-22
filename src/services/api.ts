@@ -115,5 +115,7 @@ export const api = {
     (await apiClient.delete<{ message: string }>(`${v1}/internal/invitations/${userId}`)).data,
   invite: async (email: string, role: "recruiter" | "hiring_manager") =>
     (await apiClient.post<{ message: string }>(`${v1}/internal/invitations`, { email, role })).data,
+  setBlocked: async (userId: string, blocked: boolean) =>
+    (await apiClient.post<{ message: string }>(`${v1}/internal/users/${userId}/${blocked ? "block" : "unblock"}`)).data,
 };
 

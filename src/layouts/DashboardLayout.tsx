@@ -42,7 +42,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
 ];
 
 export default function Layout() {
-  const { user, logout } = useSession();
+  const { user } = useSession();
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -64,19 +64,6 @@ export default function Layout() {
             );
           })}
         </nav>
-        <div className="sidebar-footer">
-          <div className="user-chip">
-            <Link to="/profile" className="row" style={{ gap: 10, color: "inherit", minWidth: 0, flex: 1, textDecoration: "none" }} title="My profile">
-              <div className="avatar">{initials(user.name, user.email[0]?.toUpperCase())}</div>
-              <div className="who">
-                <strong title={user.email}>{user.name || user.email}</strong>
-                <span>{ROLE_LABEL[user.role]}</span>
-              </div>
-            </Link>
-            <button className="btn btn-ghost btn-icon" style={{ color: "#ddd6fe", marginLeft: "auto" }}
-                    onClick={() => void logout()} title="Log out" aria-label="Log out"><LogOut /></button>
-          </div>
-        </div>
       </aside>
       <main className="main">
         <div className="topbar"><BackButton /><ProfileMenu /></div>

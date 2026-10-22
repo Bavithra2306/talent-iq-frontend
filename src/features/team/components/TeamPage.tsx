@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { MailPlus, RefreshCw, XCircle } from "lucide-react";
+import { Ban, MailPlus, RefreshCw, Unlock, XCircle } from "lucide-react";
 import { ROLE_LABEL } from "../../../app/session";
 import { Loading, PageHeader, useToast } from "../../../components/ui";
 import { api } from "../../../services/api";
@@ -28,6 +28,12 @@ export default function TeamPage() {
 
   const cancel = useMutation({
     mutationFn: (userId: string) => api.cancelInvite(userId),
+    onSuccess: (res) => { toast(res.message, "success"); void members.refetch(); },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
+
+  const block = useMutation({
+    mutationFn: (args: { id: string; blocked: boolean }) => api.setBlocked(args.id, args.blocked),
     onSuccess: (res) => { toast(res.message, "success"); void members.refetch(); },
     onError: (err) => toast(errorMessage(err), "error"),
   });
@@ -83,9 +89,27 @@ export default function TeamPage() {
                             </>
                           )}
                         </div>
-                      ) : m.status === "pending"
-                        ? <span className="badge brand plain" title="Password set, not signed in yet">Pending</span>
-                        : <span className="badge green">Active</span>}
+                      ) : (
+                        <div className="row" style={{ justifyContent: "flex-end" }}>
+                          {m.blocked
+                            ? <span className="badge red" title="Cannot sign in until unblocked">Blocked</span>
+                            : m.status === "pending"
+                              ? <span className="badge brand plain" title="Password set, not signed in yet">Pending</span>
+                              : <span className="badge green">Active</span>}
+                          {m.role !== "admin" && (m.blocked ? (
+                            <button className="btn btn-sm" disabled={block.isPending}
+                                    onClick={() => block.mutate({ id: m.id, blocked: false })}>
+                              <Unlock /> Unblock
+                            </button>
+                          ) : (
+                            <button className="btn btn-sm btn-danger" disabled={block.isPending}
+                                    title="They can no longer sign in; their data stays."
+                                    onClick={() => { if (window.confirm(`Block ${m.email}? They will be signed out and can't sign in until you unblock them.`)) block.mutate({ id: m.id, blocked: true }); }}>
+                              <Ban /> Block
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

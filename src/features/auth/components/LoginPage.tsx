@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { adminLogin, login } from "../services/authService";
 import AuthLayout from "../../../layouts/AuthLayout";
+import { EMAIL_PATTERN } from "../../../utils/password";
 
 /** Sign-in page. With `admin`, it is the admin sign-in (only admins are accepted there). */
 export default function LoginPage({ admin = false }: { admin?: boolean }) {
@@ -22,6 +23,14 @@ export default function LoginPage({ admin = false }: { admin?: boolean }) {
     event.preventDefault();
 
     setError("");
+    if (!EMAIL_PATTERN.test(email.trim())) {
+      setError("Please enter a valid email address, e.g. you@company.com.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -39,7 +48,9 @@ export default function LoginPage({ admin = false }: { admin?: boolean }) {
       if (status === 403) {
         setError(err.response?.data?.detail || "This sign-in page isn't for your account.");
       } else if (status === 401 || status === 400) {
-        setError("That email and password don't match. Please try again.");
+        setError(err.response?.data?.detail === "Please accept your email invitation first."
+          ? "Please accept your email invitation first."
+          : "Wrong email or password. Please check and try again.");
       } else {
         setError(
           err.response?.data?.detail ||
@@ -60,7 +71,7 @@ export default function LoginPage({ admin = false }: { admin?: boolean }) {
       {successMessage && <div className="alert success" role="status">{successMessage}</div>}
       {error && <div className="alert error" role="alert">{error}</div>}
 
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <div className="field">
           <label htmlFor="email">Email</label>
           <input

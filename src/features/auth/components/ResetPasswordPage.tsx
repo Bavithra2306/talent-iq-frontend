@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { resetPassword } from "../services/authService";
 import AuthLayout from "../../../layouts/AuthLayout";
+import { passwordError } from "../../../utils/password";
+import PasswordRules from "./PasswordRules";
 
 export default function ResetPasswordPage() {
   const location = useLocation();
@@ -22,8 +24,13 @@ export default function ResetPasswordPage() {
     setMessage("");
     setError("");
 
-    if (newPassword !== confirmPassword) {
-      setError("The two passwords don't match.");
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError("The code from the email has 6 digits.");
+      return;
+    }
+    const problem = passwordError(newPassword, confirmPassword);
+    if (problem) {
+      setError(problem);
       return;
     }
 
@@ -74,7 +81,7 @@ export default function ResetPasswordPage() {
         <div className="field">
           <label htmlFor="newPassword">New password</label>
           <input id="newPassword" className="input" type="password" value={newPassword}
-                 onChange={(event) => setNewPassword(event.target.value)} placeholder="At least 8 characters"
+                 onChange={(event) => setNewPassword(event.target.value)} placeholder="8+ characters with a symbol"
                  autoComplete="new-password" required />
         </div>
 
@@ -83,6 +90,8 @@ export default function ResetPasswordPage() {
           <input id="confirmPassword" className="input" type="password" value={confirmPassword}
                  onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" required />
         </div>
+
+        <PasswordRules password={newPassword} confirm={confirmPassword} />
 
         <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
           {loading ? "Saving…" : "Save new password"}

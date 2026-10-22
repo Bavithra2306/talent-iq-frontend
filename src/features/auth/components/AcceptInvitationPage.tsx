@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useAcceptInvitation } from "../queries/authQueries";
 import AuthLayout from "../../../layouts/AuthLayout";
+import { passwordError } from "../../../utils/password";
+import PasswordRules from "./PasswordRules";
 
 export default function AcceptInvitationPage() {
   const [password, setPassword] = useState("");
@@ -33,13 +35,9 @@ export default function AcceptInvitationPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setValidationError("Your password must contain at least 8 characters.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setValidationError("The passwords do not match.");
+    const problem = passwordError(password, confirmPassword);
+    if (problem) {
+      setValidationError(problem);
       return;
     }
 
@@ -92,7 +90,7 @@ export default function AcceptInvitationPage() {
               minLength={8}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="8+ characters with a symbol"
               required
             />
             <button
@@ -136,6 +134,8 @@ export default function AcceptInvitationPage() {
               )}
             </button>
           </div>
+
+          <PasswordRules password={password} confirm={confirmPassword} />
 
           {!token && (
              <p className="form-error" role="alert">

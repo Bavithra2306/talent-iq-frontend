@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, History, ListChecks, PenLine, Play, Send, SlidersHorizontal, Sparkles, Star, Wand2, X } from "lucide-react";
+import { FileText, History, ListChecks, PenLine, Play, Send, SlidersHorizontal, Sparkles, Wand2, X } from "lucide-react";
 import {
   Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreBar, StageTimeline, StatusBadge, TagInput, useToast,
 } from "../../../components/ui";
@@ -302,11 +302,11 @@ export default function JobShortlistPage() {
                       <td>{e.scores.education ?? "—"}</td>
                       <td><StatusBadge status={e.status} />{e.shared_to && <div className="cell-sub">shared</div>}</td>
                       <td onClick={(ev) => ev.stopPropagation()}>
-                        <button className={`btn btn-sm btn-icon ${e.status === "shortlisted" ? "btn-primary" : ""}`} disabled={locked || toggle.isPending}
-                                title={locked ? "Already shared or reviewed" : e.status === "shortlisted" ? "Remove from shortlist" : "Add to shortlist"}
-                                onClick={() => toggle.mutate({ entryId: e.id, on: e.status !== "shortlisted" })}>
-                          <Star />
-                        </button>
+                        <input type="checkbox" className="shortlist-check" checked={e.status !== "sourced"}
+                               disabled={locked || toggle.isPending}
+                               title={locked ? "Already shared or reviewed" : e.status === "shortlisted" ? "Remove from shortlist" : "Add to shortlist"}
+                               aria-label={`Shortlist ${e.name ?? "candidate"}`}
+                               onChange={() => toggle.mutate({ entryId: e.id, on: e.status !== "shortlisted" })} />
                       </td>
                       <td onClick={(ev) => ev.stopPropagation()}>
                         <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${e.candidate_id}/resume`)}><FileText /> View</button>
