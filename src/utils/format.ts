@@ -112,11 +112,13 @@ const DETAIL_LABEL: Record<string, string | null> = {
   hiring_manager: "hiring manager", shared: "shared", comment: "comment", notes: "note", note: "",
   approved: "approved", rejected: "rejected", interview_scheduled: "interviews", format: "format",
   scope: "which candidates", document_type: "file looks like", chars: "characters read", scanned: "scanned",
-  considered: "considered", below_threshold: "below the cut-off", not_indexed: "not ready yet", strong: "strong matches",
+  considered: "considered", not_indexed: "not ready yet", strong: "strong matches",
   needs_review: "to review", new_candidates: "new people", updated_candidates: "updated",
   // internal details nobody needs to read
   batch_id: null, run_id: null, finished: null, bytes: null, document_id: null, entry_id: null,
   candidate_id: null, hiring_manager_id: null, recruiters: null, step: null, input: null,
+  // similarity numbers mean nothing to a recruiter
+  strong_similarity: null, threshold: null, below_threshold: null,
 };
 
 function detailValue(value: unknown): string {
@@ -156,7 +158,6 @@ export function friendlyDetails(details: Record<string, unknown> | string | null
       const label = DETAIL_LABEL[k] ?? labelize(k).toLowerCase();
       const value = detailValue(v);
       if (k === "seconds") return `took ${value}s`;
-      if (k === "threshold") return `lowest similarity ${Math.round(Number(v) * 100)}%`;
       if (!label) return value;
       // Counts read "4 scored"; everything else reads "source: github".
       return /^\d+(\.\d+)?$/.test(value) ? `${value} ${label}` : `${label}: ${value}`;
