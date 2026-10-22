@@ -57,7 +57,7 @@ export default function TeamPage() {
               <option value="hiring_manager">Hiring manager</option>
             </select></div>
           <p className="small muted">Inviting someone who hasn't accepted yet sends them a fresh link. Typed a wrong email? Cancel that invitation in the list.</p>
-          <div className="row" style={{ justifyContent: "flex-end" }}>
+          <div className="row team-actions">
             <button className="btn btn-primary" disabled={invite.isPending}><MailPlus /> {invite.isPending ? "Sending…" : "Send invitation"}</button>
           </div>
         </form>
@@ -74,7 +74,7 @@ export default function TeamPage() {
                     <td><span className="badge brand plain">{ROLE_LABEL[m.role]}</span></td>
                     <td style={{ textAlign: "right" }}>
                       {m.status === "invite_sent" ? (
-                        <div className="row" style={{ justifyContent: "flex-end" }}>
+                        <div className="row team-actions">
                           <span className="badge amber">Invite sent</span>
                           {m.role !== "admin" && (
                             <>
@@ -90,7 +90,7 @@ export default function TeamPage() {
                           )}
                         </div>
                       ) : (
-                        <div className="row" style={{ justifyContent: "flex-end" }}>
+                        <div className="row team-actions">
                           {m.blocked
                             ? <span className="badge red" title="Cannot sign in until unblocked">Blocked</span>
                             : m.status === "pending"
@@ -102,10 +102,10 @@ export default function TeamPage() {
                               <Unlock /> Unblock
                             </button>
                           ) : (
-                            <button className="btn btn-sm btn-danger" disabled={block.isPending}
+                            <button className="btn btn-sm btn-text-danger" disabled={block.isPending}
                                     title="They can no longer sign in; their data stays."
                                     onClick={() => { if (window.confirm(`Block ${m.email}? They will be signed out and can't sign in until you unblock them.`)) block.mutate({ id: m.id, blocked: true }); }}>
-                              <Ban /> Block
+                              <Ban /> Block user
                             </button>
                           ))}
                         </div>

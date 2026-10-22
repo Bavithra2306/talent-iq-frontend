@@ -388,3 +388,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .password-rules { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 4px; font-size: 13px; color: #b91c1c; }
 .password-rules li { display: flex; align-items: center; gap: 6px; }
 .password-rules li.ok { color: #15803d; }
+
+/* Team page: status badge and actions stay on one line, right-aligned */
+.team-actions { justify-content: flex-end; flex-wrap: nowrap; white-space: nowrap; }
+/* A quiet destructive action: red words, normal button */
+.btn-text-danger { color: var(--red-600); }
+.btn-text-danger:hover:not(:disabled) { background: var(--red-100); border-color: var(--red-100); color: var(--red-600); }
