@@ -149,3 +149,11 @@
   .auth-orb, .auth-particles, .auth-scene, .float-badges { translate: none; }
   .auth-particle { display: none; }
 }
+
+/* admin sign-in: team members instead of candidates */
+.scene-pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: rgb(255 255 255 / 16%); color: #E0F2FE; }
+.scene-pill.green { background: rgb(34 197 94 / 25%); color: #BBF7D0; }
+.scene-pill.blue { background: rgb(56 189 248 / 25%); color: #BAE6FD; }
+.scene-pill.amber { background: rgb(245 158 11 / 25%); color: #FDE68A; }
+.scene-member:nth-child(1) .scene-pill { animation: pill-blink 2.6s ease-in-out infinite; }
+@keyframes pill-blink { 50% { opacity: .55; } }

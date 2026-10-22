@@ -1,5 +1,5 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { CheckCircle2, FileCheck2, Send, Star } from "lucide-react";
+import { CheckCircle2, FileCheck2, MailPlus, ScrollText, Send, ShieldCheck, Star } from "lucide-react";
 import { LogoMark } from "../components/Logo";
 
 /** Shared frame for the sign-in pages: a full-page animated background with the form in a centred card. */
@@ -24,6 +24,17 @@ const BADGES = [
   { icon: FileCheck2, title: "Resume read", text: "Name, skills and roles found" },
   { icon: Star, title: "Top match", text: "94% fit for Java Developer" },
   { icon: Send, title: "Shortlist shared", text: "With the hiring manager" },
+];
+// The admin sign-in shows admin things: inviting people, who may sign in, the activity log.
+const ADMIN_MEMBERS = [
+  { initials: "RC", name: "Recruiter", meta: "Invitation sent", status: "Invited", tone: "amber" },
+  { initials: "HM", name: "Hiring manager", meta: "Password set", status: "Pending", tone: "blue" },
+  { initials: "RC", name: "Recruiter", meta: "Signed in today", status: "Active", tone: "green" },
+];
+const ADMIN_BADGES = [
+  { icon: MailPlus, title: "Invite people", text: "Send an invitation by email" },
+  { icon: ShieldCheck, title: "Control access", text: "Block or unblock anyone" },
+  { icon: ScrollText, title: "Every step logged", text: "See it in the activity log" },
 ];
 const PARTICLES = Array.from({ length: 26 }, (_, i) => ({
   left: `${(i * 37 + 8) % 98}%`,
@@ -54,10 +65,33 @@ function MatchScene() {
   );
 }
 
-function FloatingBadges() {
+function AdminScene() {
+  return (
+    <div className="auth-scene" aria-hidden="true">
+      <div className="scene-job">
+        <span className="scene-tag">Team</span>
+        <strong>Your hiring team</strong>
+        <span className="scene-skills"><i>Recruiters</i><i>Hiring managers</i></span>
+      </div>
+      <div className="scene-flow"><span className="scene-dot" /></div>
+      <div className="scene-cards">
+        {ADMIN_MEMBERS.map((m, i) => (
+          <div key={i} className="scene-card scene-member" style={{ ["--i" as string]: i } as CSSProperties}>
+            <span className="scene-avatar">{m.initials}</span>
+            <span className="scene-who"><b>{m.name}</b><small>{m.meta}</small></span>
+            <span className={`scene-pill ${m.tone}`}>{m.status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FloatingBadges({ admin }: { admin?: boolean }) {
+  const badges = admin ? ADMIN_BADGES : BADGES;
   return (
     <div className="float-badges" aria-hidden="true">
-      {BADGES.map((b, i) => (
+      {badges.map((b, i) => (
         <div key={b.title} className="float-badge" style={{ ["--i" as string]: i } as CSSProperties}>
           <span className="float-badge-icon"><b.icon size={18} /></span>
           <span><strong>{b.title}</strong><small>{b.text}</small></span>
@@ -117,8 +151,8 @@ export default function AuthLayout({ children, admin }: { children: ReactNode; a
         </div>
         <span className="auth-glow" />
       </div>
-      <MatchScene />
-      <FloatingBadges />
+      {admin ? <AdminScene /> : <MatchScene />}
+      <FloatingBadges admin={admin} />
       <main className="auth-center">
         <div className="auth-card">
           <div className="auth-brandrow">
