@@ -102,7 +102,6 @@ function AdminHome() {
       <div className="home-actions">
         <Action to="/team" icon={<UserPlus />} label="Invite someone" primary />
         <Action to="/logs" icon={<ScrollText />} label="Activity log" />
-        <Action to="/profile" icon={<ClipboardCheck />} label="My profile" />
       </div>
     </>
   );
