@@ -114,11 +114,6 @@ export default function LoginPage({ admin = false }: { admin?: boolean }) {
         </button>
       </form>
 
-      {admin ? (
-        <p className="auth-note">Recruiter or hiring manager? <Link to="/login">Sign in here</Link></p>
-      ) : (
-        <p className="auth-note">New here? Ask your admin to send you an invitation. · <Link to="/internal">Admin sign in</Link></p>
-      )}
     </AuthLayout>
   );
 }
