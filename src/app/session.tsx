@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { Splash } from "../components/Logo";
 import { getCurrentUser, logout as logoutRequest, type CurrentUser } from "../features/auth/services/authService";
 import type { Role } from "../types/api";
 
@@ -61,15 +62,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
 
   if (state === "loading") {
-    return <div className="loading" style={{ minHeight: "100vh" }}><span className="spinner" /> Checking your session…</div>;
+    return <Splash message="Checking your session…" />;
   }
   if (state === "anonymous" || !user) {
     if (state === "error") {
       return (
-        <div className="loading" style={{ minHeight: "100vh", flexDirection: "column" }}>
-          <p>We couldn't verify your session. Check that the services are running.</p>
+        <Splash message="We couldn't verify your session. Check that the services are running.">
           <button className="btn btn-primary" onClick={() => window.location.reload()}>Try again</button>
-        </div>
+        </Splash>
       );
     }
     return <Navigate to="/login" replace />;

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ROLE_LABEL, useSession } from "../../../app/session";
 import { Alert, AnimatedNumber, BarList, ColumnChart, DonutChart, Funnel, Reveal, Skeleton, type Slice } from "../../../components/ui";
 import { api } from "../../../services/api";
+import AgentsPanel from "./AgentsPanel";
 import { STATUS_LABEL } from "../../../utils/format";
 import type { CandidateStatus } from "../../../types/api";
 
@@ -44,9 +45,9 @@ function Action({ to, icon, label, primary }: { to: string; icon: ReactNode; lab
   return <Link to={to} className={`btn home-action ${primary ? "btn-primary" : ""}`}>{icon} {label}</Link>;
 }
 
-function ChartCard({ title, hint, children, delay = 0 }: { title: string; hint?: string; children: ReactNode; delay?: number }) {
+function ChartCard({ title, hint, children, delay = 0, wide }: { title: string; hint?: string; children: ReactNode; delay?: number; wide?: boolean }) {
   return (
-    <Reveal delay={delay} className="chart-card-wrap">
+    <Reveal delay={delay} className={`chart-card-wrap ${wide ? "wide" : ""}`}>
       <div className="card chart-card">
         <div className="chart-head"><h3>{title}</h3>{hint && <span className="muted small">{hint}</span>}</div>
         {children}
@@ -94,7 +95,6 @@ function RecruiterHome() {
     const slot = days.find((d) => d.key === new Date(item.at).toDateString());
     if (slot) slot.value += 1;
   }
-  const quotaPct = quota.data ? Math.min(100, Math.round((quota.data.used_today / Math.max(1, quota.data.daily_limit)) * 100)) : 0;
 
   return (
     <>
@@ -113,6 +113,7 @@ function RecruiterHome() {
         <Alert tone="warn">Today’s free search limit is used up. New resumes are still read; they are fully searchable after {quota.data.resumes_at}.</Alert>
       )}
       <div className="chart-grid">
+        <AgentsPanel quota={quota.data} />
         <ChartCard title="Resumes by field" hint="Click a field to open the list" delay={80}>
           {categories.isLoading ? <Skeleton h={190} /> : fields.length === 0
             ? <p className="muted">No resumes yet. Upload some to see the split.</p>
@@ -126,17 +127,8 @@ function RecruiterHome() {
         <ChartCard title="Hiring funnel" hint="Share that carries on at each step" delay={160}>
           {counts.isLoading ? <Skeleton h={190} /> : <Funnel steps={funnel} />}
         </ChartCard>
-        <ChartCard title="Matching runs" hint="Last 7 days" delay={240}>
+        <ChartCard title="Matching runs" hint="Last 7 days" delay={240} wide>
           {runs.isLoading ? <Skeleton h={140} /> : <ColumnChart data={days} />}
-        </ChartCard>
-        <ChartCard title="Today’s AI search limit" hint={quota.data ? `resets ${quota.data.resumes_at}` : undefined} delay={320}>
-          {!quota.data ? <Skeleton h={90} /> : (
-            <div className="quota">
-              <div className="quota-top"><strong><AnimatedNumber value={quota.data.used_today} /></strong><span className="muted"> of {quota.data.daily_limit} used</span></div>
-              <div className="quota-track"><span className={`quota-fill ${quotaPct > 85 ? "hot" : ""}`} style={{ width: `${quotaPct}%` }} /></div>
-              <p className="muted small">{quota.data.resumes_waiting > 0 ? `${quota.data.resumes_waiting} resume(s) waiting to be made searchable.` : "Every resume is searchable."}</p>
-            </div>
-          )}
         </ChartCard>
       </div>
     </>

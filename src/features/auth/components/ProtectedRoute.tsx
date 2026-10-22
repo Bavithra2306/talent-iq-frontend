@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { Splash } from "../../../components/Logo";
 import {
   getCurrentUser,
   refreshAccessToken,
@@ -56,7 +57,7 @@ export default function ProtectedRoute({
   }, []);
 
   if (loading) {
-    return <main><p>Checking your session...</p></main>;
+    return <Splash message="Checking your session…" />;
   }
 
   if (error) {
