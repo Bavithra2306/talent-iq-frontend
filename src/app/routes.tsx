@@ -30,7 +30,7 @@ export default function AppRoutes() {
           <Route path="jobs/new" element={<RequireRole roles={["recruiter", "hiring_manager"]}><JobNewPage /></RequireRole>} />
           <Route path="jobs/:id" element={<RequireRole roles={["recruiter", "hiring_manager"]}><JobDetailPage /></RequireRole>} />
           <Route path="jobs/:id/shortlist" element={<RequireRole roles={["recruiter"]}><JobShortlistPage /></RequireRole>} />
-          <Route path="resumes" element={<RequireRole roles={["recruiter", "hiring_manager"]}><ResumesPage /></RequireRole>} />
+          <Route path="resumes" element={<RequireRole roles={["recruiter"]}><ResumesPage /></RequireRole>} />
           <Route path="candidates" element={<Navigate to="/resumes" replace />} />
           <Route path="sourcing" element={<RequireRole roles={["recruiter"]}><SourcingPage /></RequireRole>} />
           <Route path="shortlists" element={<RequireRole roles={["recruiter"]}><ShortlistsPage /></RequireRole>} />
