@@ -36,7 +36,7 @@
 .auth-shell:hover .auth-glow { opacity: 1; }
 
 /* mouse movement: the individual `translate` property adds to the keyframe `transform` animations */
-.auth-orb, .auth-particles, .auth-scene, .float-badges {
+.auth-orb, .auth-particles, .doc-depth {
   translate: calc(var(--mx) * var(--k, 0) * 1px) calc(var(--my) * var(--k, 0) * 1px);
   transition: translate .45s cubic-bezier(.2,.7,.2,1);
 }
@@ -137,7 +137,6 @@
 @keyframes spark-twinkle { 0%, 100% { transform: scale(1) rotate(0); opacity: 1; } 50% { transform: scale(1.28) rotate(18deg); opacity: .8; } }
 
 /* ---- responsive and reduced motion ---- */
-@media (max-width: 1199px) { .auth-scene, .float-badges { display: none; } }
 @media (max-height: 760px) { .auth-points { display: none; } }
 @media (max-width: 560px) {
   .auth-shell { padding: 20px 12px; }
@@ -146,7 +145,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-shell, .auth-shell *, .auth-card { animation: none !important; }
-  .auth-orb, .auth-particles, .auth-scene, .float-badges { translate: none; }
+  .auth-orb, .auth-particles, .doc-depth { translate: none; }
   .auth-particle { display: none; }
 }
 
@@ -157,3 +156,19 @@
 .scene-pill.amber { background: rgb(245 158 11 / 25%); color: #FDE68A; }
 .scene-member:nth-child(1) .scene-pill { animation: pill-blink 2.6s ease-in-out infinite; }
 @keyframes pill-blink { 50% { opacity: .55; } }
+
+/* ---- drifting resume sheets (whole page, behind the card) ---- */
+.doc-field { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.doc-depth { position: absolute; bottom: 0; top: 0; width: 0; }
+.doc-sheet { position: absolute; left: 0; bottom: -150px; display: grid; gap: 7px; padding: 10px; border-radius: 10px;
+  background: rgb(255 255 255 / 9%); border: 1px solid rgb(255 255 255 / 20%); backdrop-filter: blur(3px);
+  box-shadow: 0 8px 22px rgb(2 6 23 / 22%); animation: sheet-drift linear infinite; }
+.doc-head { display: flex; align-items: center; gap: 7px; }
+.doc-avatar { width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, #BAE6FD, #38BDF8); flex: none; }
+.doc-bar { display: block; height: 5px; border-radius: 3px; background: rgb(191 219 254 / 38%); }
+.doc-bar.short { width: 50%; background: rgb(224 242 254 / 60%); }
+.doc-tick { position: absolute; right: -8px; top: -8px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: #16A34A; color: #fff; opacity: 0; scale: .4; animation: sheet-tick linear infinite; }
+@keyframes sheet-drift { from { transform: translateY(0) rotate(var(--tilt)); } to { transform: translateY(calc(-100vh - 320px)) rotate(calc(var(--tilt) * -1)); } }
+@keyframes sheet-tick { 0%, 30% { opacity: 0; scale: .4; } 36%, 60% { opacity: 1; scale: 1; } 66%, 100% { opacity: 0; scale: .4; } }
+@media (max-width: 700px) { .doc-field { opacity: .5; } }

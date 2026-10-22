@@ -1,5 +1,5 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { CheckCircle2, FileCheck2, MailPlus, ScrollText, Send, ShieldCheck, Star } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { LogoMark } from "../components/Logo";
 
 /** Shared frame for the sign-in pages: a full-page animated background with the form in a centred card. */
@@ -14,28 +14,6 @@ const ADMIN_POINTS = [
   "Follow every step in the activity log",
 ];
 
-// Made-up demo content that tells the product story: a job is compared with candidates and each gets a score.
-const MATCHES = [
-  { initials: "AM", name: "Alex Morgan", meta: "7 yrs · Java, Spring", score: 94 },
-  { initials: "SR", name: "Sam Rivera", meta: "5 yrs · Java, SQL", score: 88 },
-  { initials: "JL", name: "Jordan Lee", meta: "4 yrs · Java", score: 81 },
-];
-const BADGES = [
-  { icon: FileCheck2, title: "Resume read", text: "Name, skills and roles found" },
-  { icon: Star, title: "Top match", text: "94% fit for Java Developer" },
-  { icon: Send, title: "Shortlist shared", text: "With the hiring manager" },
-];
-// The admin sign-in shows admin things: inviting people, who may sign in, the activity log.
-const ADMIN_MEMBERS = [
-  { initials: "RC", name: "Recruiter", meta: "Invitation sent", status: "Invited", tone: "amber" },
-  { initials: "HM", name: "Hiring manager", meta: "Password set", status: "Pending", tone: "blue" },
-  { initials: "RC", name: "Recruiter", meta: "Signed in today", status: "Active", tone: "green" },
-];
-const ADMIN_BADGES = [
-  { icon: MailPlus, title: "Invite people", text: "Send an invitation by email" },
-  { icon: ShieldCheck, title: "Control access", text: "Block or unblock anyone" },
-  { icon: ScrollText, title: "Every step logged", text: "See it in the activity log" },
-];
 const PARTICLES = Array.from({ length: 26 }, (_, i) => ({
   left: `${(i * 37 + 8) % 98}%`,
   size: 3 + ((i * 5) % 5),
@@ -43,58 +21,28 @@ const PARTICLES = Array.from({ length: 26 }, (_, i) => ({
   delay: -((i * 2.3) % 16),
 }));
 
-function MatchScene() {
-  return (
-    <div className="auth-scene" aria-hidden="true">
-      <div className="scene-job">
-        <span className="scene-tag">Job</span>
-        <strong>Java Developer</strong>
-        <span className="scene-skills"><i>Java</i><i>Spring Boot</i><i>SQL</i></span>
-      </div>
-      <div className="scene-flow"><span className="scene-dot" /></div>
-      <div className="scene-cards">
-        {MATCHES.map((m, i) => (
-          <div key={m.name} className="scene-card" style={{ ["--i" as string]: i, ["--score" as string]: m.score } as CSSProperties}>
-            <span className="scene-avatar">{m.initials}</span>
-            <span className="scene-who"><b>{m.name}</b><small>{m.meta}</small></span>
-            <span className="scene-ring"><span className="scene-num" /></span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// A drifting field of blank resume sheets across the whole page. Each one is read, then a tick appears
+// ("matched"). No text, so nothing to read wrongly, and it fits every role.
+const SHEETS = Array.from({ length: 14 }, (_, i) => ({
+  left: `${(i * 29 + 4) % 94}%`,
+  width: 74 + ((i * 17) % 40),
+  duration: 26 + ((i * 7) % 18),
+  delay: -((i * 5.3) % 40),
+  depth: [8, 16, 26][i % 3],
+  tilt: ((i * 13) % 17) - 8,
+  lines: 3 + (i % 3),
+}));
 
-function AdminScene() {
+function DocField() {
   return (
-    <div className="auth-scene" aria-hidden="true">
-      <div className="scene-job">
-        <span className="scene-tag">Team</span>
-        <strong>Your hiring team</strong>
-        <span className="scene-skills"><i>Recruiters</i><i>Hiring managers</i></span>
-      </div>
-      <div className="scene-flow"><span className="scene-dot" /></div>
-      <div className="scene-cards">
-        {ADMIN_MEMBERS.map((m, i) => (
-          <div key={i} className="scene-card scene-member" style={{ ["--i" as string]: i } as CSSProperties}>
-            <span className="scene-avatar">{m.initials}</span>
-            <span className="scene-who"><b>{m.name}</b><small>{m.meta}</small></span>
-            <span className={`scene-pill ${m.tone}`}>{m.status}</span>
+    <div className="doc-field" aria-hidden="true">
+      {SHEETS.map((d, i) => (
+        <div key={i} className="doc-depth" style={{ left: d.left, ["--k" as string]: d.depth } as CSSProperties}>
+          <div className="doc-sheet" style={{ width: d.width, animationDuration: `${d.duration}s`, animationDelay: `${d.delay}s`, ["--tilt" as string]: `${d.tilt}deg` } as CSSProperties}>
+            <span className="doc-head"><i className="doc-avatar" /><i className="doc-bar short" /></span>
+            {Array.from({ length: d.lines }, (_, n) => <i key={n} className="doc-bar" style={{ width: `${92 - n * 14}%` }} />)}
+            <span className="doc-tick" style={{ animationDelay: `${d.delay + 6}s`, animationDuration: `${d.duration}s` }}><CheckCircle2 size={16} /></span>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FloatingBadges({ admin }: { admin?: boolean }) {
-  const badges = admin ? ADMIN_BADGES : BADGES;
-  return (
-    <div className="float-badges" aria-hidden="true">
-      {badges.map((b, i) => (
-        <div key={b.title} className="float-badge" style={{ ["--i" as string]: i } as CSSProperties}>
-          <span className="float-badge-icon"><b.icon size={18} /></span>
-          <span><strong>{b.title}</strong><small>{b.text}</small></span>
         </div>
       ))}
     </div>
@@ -151,8 +99,7 @@ export default function AuthLayout({ children, admin }: { children: ReactNode; a
         </div>
         <span className="auth-glow" />
       </div>
-      {admin ? <AdminScene /> : <MatchScene />}
-      <FloatingBadges admin={admin} />
+      <DocField />
       <main className="auth-center">
         <div className="auth-card">
           <div className="auth-brandrow">
