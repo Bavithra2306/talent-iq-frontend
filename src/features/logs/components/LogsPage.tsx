@@ -114,8 +114,8 @@ export default function LogsPage() {
   const needle = search.trim().toLowerCase();
   const visibleRuns = runs.filter((r) =>
     (!runFilter || r.state === runFilter) &&
-    (!needle || `${RUN_TITLE[r.area] ?? ""} ${jobTitle(r.jobId)} ${r.events.map((e) => `${describeAction(e.action)} ${outputText(e)}`).join(" ")}`.toLowerCase().includes(needle)));
-  const visibleList = (list.data?.items ?? []).filter((e) => !needle || `${describeAction(e.action)} ${outputText(e)} ${jobTitle(e.job_id)}`.toLowerCase().includes(needle));
+    (!needle || `${RUN_TITLE[r.area] ?? ""} ${jobTitle(r.jobId)} ${r.label} ${r.events.map((e) => `${describeAction(e.action)} ${friendlyDetails(e.input_data)} ${outputText(e)}`).join(" ")}`.toLowerCase().includes(needle)));
+  const visibleList = (list.data?.items ?? []).filter((e) => !needle || `${describeAction(e.action)} ${labelize(e.stage)} ${friendlyDetails(e.input_data)} ${outputText(e)} ${jobTitle(e.job_id)}`.toLowerCase().includes(needle));
 
   const ok = stateCounts.done ?? 0;
   const attention = (stateCounts.attention ?? 0) + (stateCounts.failed ?? 0);
@@ -155,7 +155,7 @@ export default function LogsPage() {
           </div>
           <div className="row grow" style={{ position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: 10, color: "var(--ink-400)" }} />
-            <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Search the log" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Search by job, step or result, e.g. failed, Java, sourcing" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <select className="select" value={filters.job_id} onChange={(e) => set({ job_id: e.target.value })}>
             <option value="">All jobs</option>

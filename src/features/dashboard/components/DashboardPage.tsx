@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardCheck, FilePlus2, ListChecks, Upload, UserPlus, ScrollText } from "lucide-react";
+import { ClipboardCheck, FilePlus2, ListChecks, ScrollText, Upload, UserCheck, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
 import { ROLE_LABEL, useSession } from "../../../app/session";
 import { Alert, AnimatedNumber, BarList, ColumnChart, DonutChart, Funnel, Reveal, Skeleton, type Slice } from "../../../components/ui";
@@ -101,7 +101,7 @@ function RecruiterHome() {
       <div className="home-tiles">
         <Tile label="Resumes" value={resumes.data?.total} to="/resumes" icon={<Upload />} />
         <Tile label="Open jobs" value={jobs.data?.total} to="/jobs" icon={<FilePlus2 />} delay={60} />
-        <Tile label="Shortlisted" value={c ? c.shortlisted : undefined} to="/shortlists" icon={<ListChecks />} delay={120} />
+        <Tile label="Approved by hiring managers" value={c ? approvedPlus : undefined} to="/shortlists" icon={<UserCheck />} delay={120} />
         <Tile label="Need your review" value={review.data?.length} to="/resumes" icon={<ClipboardCheck />} delay={180} />
       </div>
       <div className="home-actions">
@@ -137,12 +137,11 @@ function RecruiterHome() {
 
 function ManagerHome() {
   const shared = useQuery({ queryKey: ["review", "all"], queryFn: () => api.sharedWithMe({}) });
-  const count = (fn: (s: string, scheduled: boolean) => boolean) =>
-    shared.data ? shared.data.filter((e) => fn(e.status, Boolean(e.interview_scheduled_at))).length : undefined;
+  const count = (fn: (s: string) => boolean) =>
+    shared.data ? shared.data.filter((e) => fn(e.status)).length : undefined;
   const toReview = count((s) => s === "shortlisted");
   const approved = count((s) => s === "approved");
   const rejected = count((s) => s === "rejected");
-  const scheduled = count((_, sc) => sc);
   const split: Slice[] = [
     { label: "To review", value: toReview ?? 0, color: "#F59E0B" },
     { label: "Approved", value: approved ?? 0, color: "#16A34A" },
@@ -150,11 +149,10 @@ function ManagerHome() {
   ].filter((s) => s.value > 0);
   return (
     <>
-      <div className="home-tiles">
+      <div className="home-tiles three">
         <Tile label="To review" value={toReview} to="/review" icon={<ClipboardCheck />} />
         <Tile label="Approved" value={approved} to="/review" icon={<ListChecks />} delay={60} />
-        <Tile label="Interviews scheduled" value={scheduled} to="/review" icon={<ScrollText />} delay={120} />
-        <Tile label="Rejected" value={rejected} to="/review" icon={<FilePlus2 />} delay={180} />
+        <Tile label="Rejected" value={rejected} to="/review" icon={<FilePlus2 />} delay={120} />
       </div>
       <div className="home-actions">
         <Action to="/review" icon={<ClipboardCheck />} label="Review candidates" primary />

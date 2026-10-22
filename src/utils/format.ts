@@ -134,6 +134,12 @@ function detailValue(value: unknown): string {
 }
 
 /** Turn logged details ({"pool": 4, "scored": 4} or "pool=4, scored=4") into a readable line. */
+/** Older log lines can hold a raw technical error; show a plain sentence instead. */
+export function friendlyError(text: string): string {
+  const technical = /object has no attribute|traceback|nonetype|keyerror|typeerror|valueerror|attributeerror|indexerror|exception|line \d+|sqlalchemy|asyncpg|psycopg|errno|not subscriptable|unexpected error/i;
+  return technical.test(text) ? "Something went wrong. Please try again. If it keeps happening, tell your admin." : text;
+}
+
 export function friendlyDetails(details: Record<string, unknown> | string | null | undefined): string {
   if (!details) return "";
   let obj: Record<string, unknown>;
@@ -158,6 +164,7 @@ export function friendlyDetails(details: Record<string, unknown> | string | null
       const label = DETAIL_LABEL[k] ?? labelize(k).toLowerCase();
       const value = detailValue(v);
       if (k === "seconds") return `took ${value}s`;
+      if (k === "error") return friendlyError(value);
       if (!label) return value;
       // Counts read "4 scored"; everything else reads "source: github".
       return /^\d+(\.\d+)?$/.test(value) ? `${value} ${label}` : `${label}: ${value}`;
