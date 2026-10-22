@@ -82,11 +82,11 @@ export function CandidateCards({ items, onOpen, onToggle, toggling, compare, onC
             </div>
             {reasons.length > 0 && <ul className="reasons">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
             <footer className="cand-foot" onClick={(ev) => ev.stopPropagation()}>
-              <StatusBadge status={e.status} />
+              <span className="status-for"><StatusBadge status={e.status} />{locked && e.job_title && <small className="muted">for {e.job_title}</small>}</span>
               <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
                 <button className={`btn btn-sm btn-icon ${picked ? "btn-primary" : ""}`} title="Compare" aria-pressed={picked} onClick={() => onCompare(e.id)}><GitCompare /></button>
                 <button className="btn btn-sm btn-icon" title="View resume" onClick={() => openFile(`/api/v1/candidates/${e.candidate_id}/resume`, e.name ?? "Resume")}><FileText /></button>
-                <label className="cand-check" title={locked ? "Already shared or reviewed" : e.status === "shortlisted" ? "Remove from shortlist" : "Add to shortlist"}>
+                <label className="cand-check" title={locked ? `Already ${e.status === "shortlisted" ? "shared" : e.status} for ${e.job_title ?? "this job"}. This applies to this job only; ${e.name ?? "the candidate"} can still be shortlisted for other jobs.` : e.status === "shortlisted" ? "Remove from shortlist" : "Add to shortlist"}>
                   <input type="checkbox" className="shortlist-check" checked={e.status !== "sourced"} disabled={locked || toggling}
                          aria-label={`Shortlist ${e.name ?? "candidate"}`} onChange={() => onToggle(e.id, e.status !== "shortlisted")} />
                   <span className="small">Shortlist</span>
