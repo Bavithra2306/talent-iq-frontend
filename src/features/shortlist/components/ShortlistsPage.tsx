@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, ListChecks } from "lucide-react";
@@ -6,6 +6,7 @@ import { Alert, Empty, Loading, PageHeader, ScoreBar, StatusBadge } from "../../
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatYears, STATUS_LABEL } from "../../../utils/format";
+import JobSummary from "./JobSummary";
 
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
@@ -24,27 +25,41 @@ export default function ShortlistsPage() {
     queryKey: ["all-shortlists", view],
     queryFn: () => api.allShortlists({ ...view, limit: 100 }),
   });
+  const [selectedId, setSelectedId] = useState("");
+  const [jobSearch, setJobSearch] = useState("");
+  const selectedJob = jobs.data?.items.find((j) => j.id === selectedId);
+  const visibleJobs = useMemo(
+    () => (jobs.data?.items ?? []).filter((j) => !jobSearch.trim() || `${j.title} ${j.category ?? ""}`.toLowerCase().includes(jobSearch.trim().toLowerCase())),
+    [jobs.data, jobSearch],
+  );
   const jobTitle = (id: string) => jobs.data?.items.find((j) => j.id === id)?.title ?? "Job";
 
   return (
     <>
-      <PageHeader title="Shortlists" subtitle="Pick a job description and press Start matching." />
+      <PageHeader title="Shortlists" subtitle="Choose a job, check its key details, then start matching." />
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><div><h2>Job descriptions</h2><p>Choose one to match resumes against it.</p></div></div>
-        {jobs.isLoading && <Loading />}
+        <div className="card-header">
+          <div><h2>Job descriptions</h2><p>Click a job to see what it asks for.</p></div>
+          {(jobs.data?.items.length ?? 0) > 6 && (
+            <input className="input" style={{ maxWidth: 220 }} placeholder="Search jobs" value={jobSearch} onChange={(e) => setJobSearch(e.target.value)} />
+          )}
+        </div>
+        {jobs.isLoading && <Loading rows={2} />}
         {jobs.data?.items.length === 0 && <Empty title="No open jobs">Create a job first.</Empty>}
         {jobs.data && jobs.data.items.length > 0 && (
-          <div className="card-body grid grid-3">
-            {jobs.data.items.map((j) => (
-              <button key={j.id} className="card card-pad" style={{ textAlign: "left", cursor: "pointer" }} onClick={() => navigate(`/jobs/${j.id}/shortlist`)}>
-                <div className="cell-title">{j.title}</div>
-                <div className="cell-sub">{[j.category, j.location, j.experience_years !== null ? `${j.experience_years}+ yrs` : null].filter(Boolean).join(" · ")}</div>
-                <div className="chips" style={{ marginTop: 10 }}>{(j.skills ?? []).slice(0, 4).map((s) => <span key={s} className="tag gray">{s}</span>)}</div>
+          <div className="jd-list">
+            {visibleJobs.map((j) => (
+              <button key={j.id} className={`jd-card ${selectedJob?.id === j.id ? "on" : ""}`} onClick={() => setSelectedId(selectedJob?.id === j.id ? "" : j.id)}
+                      aria-pressed={selectedJob?.id === j.id}>
+                <strong>{j.title}</strong>
+                <span className="muted small">{[j.category, j.experience_years != null ? `${j.experience_years}+ yrs` : null].filter(Boolean).join(" · ") || "—"}</span>
               </button>
             ))}
+            {visibleJobs.length === 0 && <span className="muted small" style={{ padding: 8 }}>No job matches “{jobSearch}”.</span>}
           </div>
         )}
+        {selectedJob && <div className="card-body jd-detail-wrap" key={selectedJob.id}><JobSummary job={selectedJob} /></div>}
       </div>
 
       <div className="card">
@@ -86,7 +101,7 @@ export default function ShortlistsPage() {
                     <td style={{ minWidth: 150 }}><ScoreBar value={e.total_score} /></td>
                     <td><StatusBadge status={e.status} /></td>
                     <td onClick={(ev) => ev.stopPropagation()}>
-                      <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${e.candidate_id}/resume`)}><FileText /> View</button>
+                      <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${e.candidate_id}/resume`, e.name ?? "Resume")}><FileText /> View</button>
                     </td>
                   </tr>
                 ))}

@@ -1,23 +1,36 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, History, ListChecks, PenLine, Play, Send, SlidersHorizontal, Sparkles, Wand2, X } from "lucide-react";
+import { FileText, GitCompare, History, LayoutGrid, ListChecks, PenLine, Play, Rows3, Send, SlidersHorizontal, Sparkles, Wand2, X } from "lucide-react";
 import {
-  Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreBar, StageTimeline, StatusBadge, TagInput, useToast,
+  Alert, Drawer, Empty, Loading, Modal, PageHeader, ScoreBar, StatusBadge, TagInput, useToast,
 } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { describeAction, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
-import type { ParsedFilter, ShortlistEntry, Stage, Weights } from "../../../types/api";
+import type { ParsedFilter, ShortlistEntry, Weights } from "../../../types/api";
 import EntryDetail from "./EntryDetail";
+import MatchPipeline from "./MatchPipeline";
+import { CandidateCards, CompareModal } from "./CandidateCards";
 
-const RUN_STAGES: Stage[] = ["created", "collecting", "reading", "scoring", "shortlisted"];
-const STAGE_NAMES: Partial<Record<Stage, string>> = {
-  created: "Started", collecting: "Comparing resumes", reading: "Earlier scores", scoring: "AI scoring", shortlisted: "Done",
-};
-const WEIGHT_LABELS: [keyof Weights, string][] = [
-  ["skill_pct", "Skills"], ["role_pct", "Role"], ["exp_pct", "Experience"], ["edu_pct", "Education"],
+const WEIGHT_LABELS: [keyof Weights, string, string][] = [
+  ["skill_pct", "Skills", "#1D4ED8"], ["role_pct", "Role", "#0EA5E9"], ["exp_pct", "Experience", "#16A34A"], ["edu_pct", "Education", "#F59E0B"],
 ];
+
+/** Move one slider and spread the rest so the four always add up to 100. */
+function rebalance(w: Weights, key: keyof Weights, value: number): Weights {
+  const others = (Object.keys(w) as (keyof Weights)[]).filter((k) => k !== key);
+  const rest = 100 - value;
+  const base = others.reduce((sum, k) => sum + w[k], 0);
+  const next = { ...w, [key]: value };
+  let used = 0;
+  others.forEach((k, i) => {
+    const share = i === others.length - 1 ? rest - used : Math.round(base === 0 ? rest / others.length : (w[k] / base) * rest);
+    next[k] = Math.max(0, share);
+    used += next[k];
+  });
+  return next;
+}
 
 interface ResultFilters {
   skills: string[]; location: string; min_experience: string; max_experience: string;
@@ -30,6 +43,8 @@ export default function JobShortlistPage() {
   const { id = "" } = useParams();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
   const job = useQuery({ queryKey: ["job", id], queryFn: () => api.getJob(id) });
 
   // 1. matching
@@ -45,6 +60,15 @@ export default function JobShortlistPage() {
     if (runStatus.data?.finished) void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
   }, [runStatus.data?.finished, id, queryClient]);
   const running = start.isPending || Boolean(runId && !runStatus.data?.finished);
+  // Coming from "Start matching" on the Shortlists page: begin right away, once.
+  const autostarted = useRef(false);
+  useEffect(() => {
+    if ((location.state as { autostart?: boolean } | null)?.autostart && job.data?.skills?.length && !autostarted.current) {
+      autostarted.current = true;
+      start.mutate();
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [job.data, location.state, location.pathname, navigate, start]);
 
   // 2. results, then filters / natural-language filter / top K
   const [filters, setFilters] = useState<ResultFilters>(NO_FILTERS);
@@ -57,6 +81,10 @@ export default function JobShortlistPage() {
   const [sharing, setSharing] = useState(false);
   const [history, setHistory] = useState(false);
   const [tab, setTab] = useState<"matches" | "shortlisted">("matches");
+  const [view, setView] = useState<"cards" | "table">("cards");
+  const [compare, setCompare] = useState<string[]>([]);
+  const [comparing, setComparing] = useState(false);
+  const toggleCompare = (entryId: string) => setCompare((c) => c.includes(entryId) ? c.filter((x) => x !== entryId) : c.length >= 3 ? [...c.slice(1), entryId] : [...c, entryId]);
 
   const list = useQuery({
     queryKey: ["shortlist", id, filters, preview ? weights : null],
@@ -141,8 +169,8 @@ export default function JobShortlistPage() {
         {/* ---- 1. matching ---- */}
         <div className="card">
           <div className="card-header"><div><h2>Matching</h2>
-            <p>Compares every {job.data.category ?? ""} resume with this job description. Experience and education are scored by rules;
-               the most similar resumes (75% or more; 60% or 50% if none reach it) are then scored on skills and role.</p></div></div>
+            <p>Compares every {job.data.category ?? ""} resume with this job. All resumes at 75% similarity or more are scored;
+               if fewer than 10 reach it, the next best are added up to 20 (never below 50%).</p></div></div>
           <div className="card-body stack">
             <div className="row" style={{ justifyContent: "flex-start" }}>
               <button className="btn btn-primary" disabled={running || !job.data.skills?.length} onClick={() => start.mutate()}>
@@ -151,13 +179,12 @@ export default function JobShortlistPage() {
               {!job.data.skills?.length && <span className="muted small">Add required skills to the job first.</span>}
             </div>
             {start.isError && <Alert tone="error">{errorMessage(start.error)}</Alert>}
-            {runId && s && (
-              <div className="stack" style={{ gap: 8 }}>
-                <StageTimeline stages={RUN_STAGES} current={s.stage} finished={s.finished} labels={STAGE_NAMES} />
-                {s.finished && Boolean(s.scored) && <div className="found-count">{s.scored} resumes found</div>}
-                {s.note && <Alert tone={s.pool ? "info" : "warn"}>{s.note}</Alert>}
-                {Boolean(s.not_indexed) && s.finished && (
-                  <Alert tone="warn">{s.not_indexed} resume(s) are still being added to search and were left out. Run matching again later to include them.</Alert>
+            {(runId || running) && (
+              <div className="stack" style={{ gap: 10 }}>
+                <MatchPipeline status={s} running={running} />
+                {s?.note && <Alert tone={s.pool ? "info" : "warn"}>{s.note}</Alert>}
+                {Boolean(s?.not_indexed) && s?.finished && (
+                  <Alert tone="warn">{s?.not_indexed} resume(s) are still being added to search and were left out. Run matching again later to include them.</Alert>
                 )}
               </div>
             )}
@@ -167,13 +194,21 @@ export default function JobShortlistPage() {
         {/* ---- weights ---- */}
         <div className="card">
           <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> How the score is made</h2>
-            <p>Default: skills 40%, experience 25%, role 20%, education 15%. Change them to re-rank instantly.</p></div></div>
+            <p>Drag a slider and watch the ranking change. The others adjust so the total stays 100%.</p></div></div>
           <div className="card-body stack">
-            {weights && WEIGHT_LABELS.map(([key, label]) => (
+            {weights && (
+              <div className="weight-bar" aria-hidden="true">
+                {WEIGHT_LABELS.map(([key, label, color]) => (
+                  <span key={key} style={{ width: `${weights[key]}%`, background: color }} title={`${label} ${weights[key]}%`}>{weights[key] >= 12 ? `${weights[key]}%` : ""}</span>
+                ))}
+              </div>
+            )}
+            {weights && WEIGHT_LABELS.map(([key, label, color]) => (
               <div key={key} className="slider-row">
-                <span>{label}</span>
-                <input type="range" min={0} max={100} step={5} value={weights[key]}
-                       onChange={(e) => setWeights({ ...weights, [key]: Number(e.target.value) })} />
+                <span><i className="dot-swatch" style={{ background: color }} /> {label}</span>
+                <input type="range" className="weight-slider" min={0} max={100} step={5} value={weights[key]}
+                       style={{ ["--c" as string]: color, ["--v" as string]: `${weights[key]}%` }} aria-label={`${label} weight`}
+                       onChange={(e) => { setWeights(rebalance(weights, key, Number(e.target.value))); setPreview(true); }} />
                 <strong style={{ textAlign: "right" }}>{weights[key]}%</strong>
               </div>
             ))}
@@ -182,14 +217,11 @@ export default function JobShortlistPage() {
                 Total {sum}% {sum !== 100 && "— must be 100%"}
               </span>
               <div className="row">
-                <button className="btn btn-sm" onClick={() => setWeights({ skill_pct: 40, role_pct: 20, exp_pct: 25, edu_pct: 15 })}>Reset</button>
-                <button className={`btn btn-sm ${preview ? "btn-primary" : ""}`} disabled={sum !== 100} onClick={() => setPreview(!preview)}>
-                  {preview ? "Trying it" : "Try it"}
-                </button>
+                <button className="btn btn-sm" onClick={() => { setWeights({ skill_pct: 40, role_pct: 20, exp_pct: 25, edu_pct: 15 }); setPreview(true); }}>Reset</button>
                 <button className="btn btn-sm btn-primary" disabled={sum !== 100 || saveWeights.isPending} onClick={() => weights && saveWeights.mutate(weights)}>Save</button>
               </div>
             </div>
-            {preview && <Alert>You are seeing the ranking with these settings. Press Save to keep them.</Alert>}
+            {preview && <Alert>Live preview: the ranking below uses these weights. Press Save to keep them.</Alert>}
             {saveWeights.isError && <Alert tone="error">{errorMessage(saveWeights.error)}</Alert>}
           </div>
         </div>
@@ -260,6 +292,10 @@ export default function JobShortlistPage() {
         </div>
         <div className="toolbar">
           <span className="muted">{list.data ? `${list.data.total} candidate(s)${filtered ? " match these filters" : ""}` : ""}</span>
+          <div className="segmented" role="tablist" aria-label="Results view">
+            <button role="tab" aria-selected={view === "cards"} className={view === "cards" ? "active" : ""} onClick={() => setView("cards")}><LayoutGrid /> Cards</button>
+            <button role="tab" aria-selected={view === "table"} className={view === "table" ? "active" : ""} onClick={() => setView("table")}><Rows3 /> Table</button>
+          </div>
           <div className="row" style={{ marginLeft: "auto" }}>
             <label className="small muted" htmlFor="topk">Top</label>
             <input id="topk" className="input" style={{ width: 80 }} type="number" min={1} max={100} value={topK}
@@ -277,7 +313,13 @@ export default function JobShortlistPage() {
             ? <Empty title="No one matches these filters" icon={<Sparkles />}>Change or clear the filters.</Empty>
             : <Empty title="No results yet" icon={<Sparkles />}>Press “Start matching” to score the resumes for this job.</Empty>
         )}
-        {list.data && list.data.items.length > 0 && (
+        {list.data && list.data.items.length > 0 && view === "cards" && (
+          <div className="card-body">
+            <CandidateCards items={list.data.items} onOpen={setOpenEntry} compare={compare} onCompare={toggleCompare}
+                            toggling={toggle.isPending} onToggle={(entryId, on) => toggle.mutate({ entryId, on })} />
+          </div>
+        )}
+        {list.data && list.data.items.length > 0 && view === "table" && (
           <div className="table-wrap">
             <table className="table">
               <thead><tr><th>#</th><th>Candidate and reasons</th><th>Total</th><th>Skills</th><th>Role</th><th>Exp.</th><th>Edu.</th><th>Status</th><th title="In the shortlist">Shortlist</th><th>Resume</th></tr></thead>
@@ -373,8 +415,20 @@ export default function JobShortlistPage() {
         </>
       )}
 
+      {compare.length > 0 && (
+        <div className="compare-bar" role="status">
+          <span><GitCompare size={16} /> <strong>{compare.length}</strong> selected to compare{compare.length < 2 && " (pick one more)"}</span>
+          <span className="row">
+            <button className="btn btn-sm btn-ghost" onClick={() => setCompare([])}>Clear</button>
+            <button className="btn btn-sm btn-primary" disabled={compare.length < 2} onClick={() => setComparing(true)}>Compare</button>
+          </span>
+        </div>
+      )}
+      {comparing && list.data && (
+        <CompareModal entries={list.data.items.filter((e) => compare.includes(e.id))} onClose={() => setComparing(false)} />
+      )}
       {openEntry && (
-        <Drawer title="Candidate match" onClose={() => setOpenEntry(null)}>
+        <Drawer title="Candidate match" onClose={() => setOpenEntry(null)} wide>
           <EntryDetail key={openEntry.id + (openEntry.notes_by_recruiter ?? "")} entry={openEntry}
                        onOpenResume={() => void openFile(`/api/v1/candidates/${openEntry.candidate_id}/resume`)}
                        savingNotes={notes.isPending}

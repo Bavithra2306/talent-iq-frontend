@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, Loader2, X } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, PartyPopper, X } from "lucide-react";
+import { AnimatedNumber } from "../../../components/ui";
 import { api } from "../../../services/api";
 import type { BatchStatus } from "../../../types/api";
 
@@ -33,8 +34,10 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
 
   const step = currentStep(s);
   const updated = s?.updated_candidates ?? 0;
+  const percent = finished ? 100 : Math.round((step / STEPS.length) * 100);
   return (
-    <div className="upload-result">
+    <div className={`upload-result ${finished ? "is-done" : "is-running"}`}>
+      <div className="upload-bar slim"><span style={{ width: `${Math.max(8, percent)}%` }} /></div>
       <div className="spread">
         <div className="stages">
           {STEPS.map((label, i) => {
@@ -59,13 +62,12 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
 
       {s && finished && (
         <>
-          <div className="upload-counts">
-            <span><strong>{s.total ?? 0}</strong> files uploaded</span>
-            <span className="ok"><strong>{s.saved ?? 0}</strong> ready for shortlisting
-              {updated > 0 && <> ({(s.saved ?? 0) - updated} new, {updated} updated)</>}</span>
-            <span className={s.needs_review ? "warn" : ""}><strong>{s.needs_review ?? 0}</strong> not a resume</span>
-            <span className={s.failed ? "bad" : ""}><strong>{s.failed ?? 0}</strong> failed to read</span>
-            {s.seconds !== null && <span className="muted">{Math.round(s.seconds)}s</span>}
+          <div className="done-banner"><PartyPopper size={18} /> Done{s.seconds !== null && <span className="muted"> in {Math.round(s.seconds)}s</span>}</div>
+          <div className="count-tiles">
+            <div className="count-tile"><strong><AnimatedNumber value={s.total ?? 0} /></strong><span>files uploaded</span></div>
+            <div className="count-tile ok"><strong><AnimatedNumber value={s.saved ?? 0} /></strong><span>ready for matching{updated > 0 && ` (${(s.saved ?? 0) - updated} new, ${updated} updated)`}</span></div>
+            <div className={`count-tile ${s.needs_review ? "warn" : ""}`}><strong><AnimatedNumber value={s.needs_review ?? 0} /></strong><span>not a resume</span></div>
+            <div className={`count-tile ${s.failed ? "bad" : ""}`}><strong><AnimatedNumber value={s.failed ?? 0} /></strong><span>failed to read</span></div>
           </div>
           {Boolean(s.embeddings_pending) && (
             <p className="small muted" style={{ margin: 0 }}>

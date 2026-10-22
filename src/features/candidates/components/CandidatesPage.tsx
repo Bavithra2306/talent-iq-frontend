@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, RotateCcw, Search, Upload, Users, X } from "lucide-react";
-import { Alert, Drawer, Empty, FileDrop, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
+import { Download, FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
+import { Alert, Drawer, Empty, FileDrop, InlineFile, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
 import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
 import { errorMessage } from "../../../lib/axios";
@@ -23,7 +24,8 @@ export default function ResumesPage() {
   const [progress, setProgress] = useState(0);
   const [batchId, setBatchId] = useState<string | null>(storedBatch);
   const [rejected, setRejected] = useState<{ filename: string; reason: string }[]>([]);
-  const [filters, setFilters] = useState({ category: "", search: "", skill: "", location: "", min_experience: "", status: "", sort: "date_added", order: "desc" });
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", skill: "", location: "", min_experience: "", status: "", sort: "date_added", order: "desc" });
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -88,24 +90,26 @@ export default function ResumesPage() {
         <div className="card-body stack" style={{ gap: 10 }}>
           <FileDrop compact multiple folders onFiles={addFiles} hint="PDF, Word or scanned PDF. Up to 150 files, or one zip." />
           {files.length > 0 && (
-            <div className="spread">
-              <details className="picked">
-                <summary>{files.length} file(s) selected · {formatBytes(totalBytes)}</summary>
-                <div className="file-list">
-                  {files.map((f) => (
-                    <div key={f.name + f.size} className="file-item">
-                      <span><FileText size={14} style={{ verticalAlign: -2 }} /> {f.name}</span>
-                      <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label="Remove"><X /></button>
-                    </div>
-                  ))}
-                </div>
-              </details>
-              <div className="row">
-                <button className="btn btn-ghost btn-sm" onClick={() => setFiles([])}>Clear</button>
-                <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
-                  <Upload /> {upload.isPending ? `Uploading ${progress}%` : "Upload"}
-                </button>
+            <div className="picked-box">
+              <div className="chip-files">
+                {files.slice(0, 12).map((f) => (
+                  <span key={f.name + f.size} className="file-chip" title={f.name}>
+                    <FileText size={14} /><span className="file-chip-name">{f.name}</span><span className="muted small">{formatBytes(f.size)}</span>
+                    <button className="file-chip-x" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={`Remove ${f.name}`} disabled={upload.isPending}><X size={12} /></button>
+                  </span>
+                ))}
+                {files.length > 12 && <span className="file-chip more">+{files.length - 12} more</span>}
               </div>
+              <div className="spread">
+                <span className="muted small"><strong>{files.length}</strong> file(s) · {formatBytes(totalBytes)}</span>
+                <div className="row">
+                  <button className="btn btn-ghost btn-sm" onClick={() => setFiles([])} disabled={upload.isPending}>Clear</button>
+                  <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
+                    <Upload /> {upload.isPending ? `Uploading ${progress}%` : `Upload ${files.length} file${files.length === 1 ? "" : "s"}`}
+                  </button>
+                </div>
+              </div>
+              {upload.isPending && <div className="upload-bar"><span style={{ width: `${progress}%` }} /></div>}
             </div>
           )}
           {tooMany && <Alert tone="warn">You chose {files.length} files. Please upload at most {MAX_RESUME_FILES} at a time.</Alert>}
@@ -197,10 +201,10 @@ export default function ResumesPage() {
                     <td>{c.location ?? "—"}</td>
                     <td><div className="chips">{c.skills.slice(0, 3).map((s) => <span key={s} className="tag gray">{s}</span>)}{c.skills.length > 3 && <span className="muted small">+{c.skills.length - 3}</span>}</div></td>
                     <td><JobStatuses items={c.job_statuses} /></td>
-                    <td className="muted">{labelize(c.source_site ?? "upload")}</td>
+                    <td><SourceBadge site={c.source_site} /></td>
                     <td className="muted">{formatDateTime(c.created_at)}</td>
                     <td onClick={(ev) => ev.stopPropagation()}>
-                      <button className="btn btn-sm" onClick={() => void openFile(`/api/v1/candidates/${c.id}/resume`)}><FileText /> View</button>
+                      <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View</button>
                     </td>
                   </tr>
                 ))}
@@ -232,18 +236,35 @@ function JobStatuses({ items, full }: { items: Candidate["job_statuses"]; full?:
   );
 }
 
+const SITE_LABEL: Record<string, string> = {
+  github: "GitHub", stackexchange: "Stack Overflow", huggingface: "Hugging Face", kaggle: "Kaggle",
+};
+
+/** Where a resume came from: "Uploaded" by a person, or the public site it was sourced from. */
+function SourceBadge({ site }: { site: string | null }) {
+  if (!site) return <span className="badge plain source-pill"><Upload /> Uploaded</span>;
+  return <span className="badge blue plain source-pill"><Globe /> {SITE_LABEL[site] ?? labelize(site)}</span>;
+}
+
 function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const detail = useQuery({ queryKey: ["candidate", id], queryFn: () => api.getCandidate(id) });
+  const [view, setView] = useState<"profile" | "resume">("profile");
   const c = detail.data;
   return (
-    <Drawer title={c?.name ?? "Candidate"} onClose={onClose}
+    <Drawer title={c?.name ?? "Candidate"} onClose={onClose} wide
             footer={<>
               <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}><Download /> Download</button>
-              <button className="btn btn-primary" onClick={() => void openFile(`/api/v1/candidates/${id}/resume`)}><FileText /> View resume</button>
             </>}>
       {detail.isLoading && <Loading />}
       {detail.isError && <Alert tone="error">{errorMessage(detail.error)}</Alert>}
       {c && (
+        <div className="segmented" role="tablist" aria-label="Candidate view">
+          <button role="tab" aria-selected={view === "profile"} className={view === "profile" ? "active" : ""} onClick={() => setView("profile")}><User /> Profile</button>
+          <button role="tab" aria-selected={view === "resume"} className={view === "resume" ? "active" : ""} onClick={() => setView("resume")}><FileText /> Resume</button>
+        </div>
+      )}
+      {c && view === "resume" && <InlineFile url={`/api/v1/candidates/${id}/resume`} title={c.name ?? "Resume"} height={620} />}
+      {c && view === "profile" && (
         <>
           <dl className="kv">
             <dt>Current title</dt><dd>{c.current_title ?? "—"}</dd>
@@ -253,8 +274,7 @@ function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
             <dt>Phone</dt><dd>{c.contact ?? "—"}</dd>
             <dt>Location</dt><dd>{c.location ?? "—"}</dd>
             <dt>Status</dt><dd><JobStatuses items={c.job_statuses} full /></dd>
-            <dt>Source</dt><dd>{labelize(c.source_site ?? "upload")} · {c.file_name}</dd>
-            <dt>Read by</dt><dd className="mono">{c.extraction_model ?? "—"}</dd>
+            <dt>Source</dt><dd><SourceBadge site={c.source_site} /> <span className="muted small">{c.file_name}</span></dd>
           </dl>
           <div>
             <h3 style={{ marginBottom: 8 }}>Skills</h3>

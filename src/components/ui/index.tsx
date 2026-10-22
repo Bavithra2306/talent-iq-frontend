@@ -4,6 +4,10 @@ import {
 import { AlertCircle, CheckCircle2, Circle, Info, Inbox, Loader2, UploadCloud, X, XCircle } from "lucide-react";
 import { describeAction, formatTime, friendlyDetails, labelize, STAGE_TONE, STATUS_LABEL, STATUS_TONE } from "../../utils/format";
 import type { CandidateStatus, PipelineEvent, Stage } from "../../types/api";
+import { SkeletonRows } from "./motion";
+
+export * from "./motion";
+export { FileViewerHost, InlineFile } from "./FileViewer";
 
 // ---------- layout bits ----------
 
@@ -22,8 +26,8 @@ export function PageHeader({ title, subtitle, actions, crumb }: {
   );
 }
 
-export function Loading({ label = "Loading…" }: { label?: string }) {
-  return <div className="loading"><span className="spinner" /> {label}</div>;
+export function Loading({ rows = 4 }: { label?: string; rows?: number }) {
+  return <div className="loading-skeleton"><SkeletonRows rows={rows} /></div>;
 }
 
 export function Empty({ title, children, icon }: { title: string; children?: ReactNode; icon?: ReactNode }) {
@@ -98,13 +102,13 @@ export function Modal({ title, onClose, children, footer, wide }: {
   );
 }
 
-export function Drawer({ title, onClose, children, footer }: {
-  title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode;
+export function Drawer({ title, onClose, children, footer, wide }: {
+  title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean;
 }) {
   useEscape(onClose);
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <aside className="drawer" role="dialog" aria-modal="true">
+      <aside className={`drawer ${wide ? "wide" : ""}`} role="dialog" aria-modal="true">
         <div className="modal-header"><h2>{title}</h2><button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close"><X /></button></div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./queryClient";
 import { AppDevtools } from "./devtools";
-import { ToastProvider } from "../components/ui";
+import { FileViewerHost, ToastProvider } from "../components/ui";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>{children}<FileViewerHost /></ToastProvider>
       <AppDevtools />
     </QueryClientProvider>
   );

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Code2, Database, Globe, Link2, Play } from "lucide-react";
+import { BookOpen, Check, Code2, Database, Globe, Link2, Play, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
-import { Alert, Loading, PageHeader } from "../../../components/ui";
+import { Alert, AnimatedNumber, Skeleton, PageHeader } from "../../../components/ui";
 import { api } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import type { SourceInfo } from "../../../types/api";
@@ -31,6 +31,8 @@ const DEFAULTS: Options = {
   url: { urls: "", follow_links: true },
 };
 
+const SUGGESTIONS = ["Software engineer", "Data analyst", "Nurse", "Accountant", "HR manager"];
+
 export default function SourcingPage() {
   const queryClient = useQueryClient();
   const catalog = useQuery({ queryKey: ["sources"], queryFn: api.sources });
@@ -38,6 +40,7 @@ export default function SourcingPage() {
   const [opts, setOpts] = useState<Options>(DEFAULTS);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [keyword, setKeyword] = useState("");
+  const [details, setDetails] = useState<SourceType | null>(null);
   const hasKeyword = keyword.trim().length >= 2;
 
   const run = useMutation({
@@ -54,28 +57,92 @@ export default function SourcingPage() {
   const urlCount = opts.url.urls.split(/\s+/).filter(Boolean).length;
   const invalid = selected.size === 0 || (selected.has("url") && urlCount === 0);
 
+  const upTo = (selected.has("huggingface") ? opts.huggingface.max_results : 0) + (selected.has("kaggle") ? opts.kaggle.max_results : 0)
+    + (selected.has("github") ? opts.github.max_results : 0) + (selected.has("stackexchange") ? opts.stackexchange.max_results : 0)
+    + (selected.has("url") ? urlCount : 0);
+  const chosen = catalog.data?.filter((s) => selected.has(s.type)) ?? [];
+
   return (
     <>
       <PageHeader
         title="Sourcing"
-        subtitle="Collect resumes from public sources. They go through the same reading and indexing as uploads."
+        subtitle="Collect resumes from public sources. They are read and checked exactly like uploads."
         actions={<button className="btn btn-primary" disabled={invalid || run.isPending} onClick={() => run.mutate()}>
           <Play /> {run.isPending ? "Starting…" : `Start (${selected.size} source${selected.size === 1 ? "" : "s"})`}
         </button>}
       />
       {run.isError && <div style={{ marginBottom: 16 }}><Alert tone="error">{errorMessage(run.error)}</Alert></div>}
 
-      <div className="card card-pad stack" style={{ marginBottom: 16 }}>
+      <div className="card keyword-card reveal">
         <div className="field">
-          <label htmlFor="keyword">What kind of candidates?</label>
+          <label htmlFor="keyword"><Sparkles size={15} /> What kind of candidates are you looking for?</label>
           <input id="keyword" className="input" value={keyword} onChange={(e) => setKeyword(e.target.value)}
-                 placeholder="e.g. software engineer, python developer, nurse" />
+                 placeholder="Type a role, e.g. software engineer" />
+          <div className="chips suggestion-chips">
+            {SUGGESTIONS.map((s) => (
+              <button key={s} type="button" className={`chip ${keyword === s ? "active" : ""}`} onClick={() => setKeyword(keyword === s ? "" : s)}>{s}</button>
+            ))}
+          </div>
           <span className="hint">
-            One keyword for GitHub, Stack Overflow, Hugging Face and Kaggle. Leave it empty to set each source yourself below.
-            GitHub and Stack Overflow only have developers, so they are skipped for other fields.
+            {hasKeyword
+              ? <>Using “<strong>{keyword.trim()}</strong>” to pick the field, search and tag for every source below. GitHub and Stack Overflow only have developers, so they skip other fields.</>
+              : "Optional. One word fills in the field, search and tag for every source. Leave it empty to set each source yourself."}
           </span>
         </div>
       </div>
+
+      <div className="source-grid">
+        {catalog.isLoading && Array.from({ length: 5 }, (_, i) => <Skeleton key={i} h={118} r={14} />)}
+        {catalog.isError && <Alert tone="error">{errorMessage(catalog.error)}</Alert>}
+        {catalog.data?.map((source, i) => {
+          const Icon = ICONS[source.type];
+          const on = selected.has(source.type);
+          const disabled = !source.configured;
+          const open = details === source.type;
+          return (
+            <div key={source.type} className={`source-tile reveal ${on ? "on" : ""} ${disabled ? "off" : ""}`} style={{ animationDelay: `${i * 50}ms` }}>
+              <label className="source-tile-main">
+                <input type="checkbox" className="sr-only" checked={on} disabled={disabled} onChange={() => toggle(source.type)} />
+                <span className="source-tile-icon"><Icon size={20} /></span>
+                <span className="source-tile-text"><strong>{source.name}</strong></span>
+                <span className="source-tile-tick"><Check size={14} /></span>
+                <span className="source-tile-desc muted small">{source.description}</span>
+              </label>
+              <div className="source-tile-foot">
+                {disabled ? <span className="badge amber">Needs setup</span> : <span className="badge green">Ready</span>}
+                <button type="button" className="link-btn" onClick={() => setDetails(open ? null : source.type)} aria-expanded={open}>{open ? "Hide details" : "Details"}</button>
+              </div>
+              {open && (
+                <div className="source-tile-info">
+                  <div><strong>How much:</strong> {source.limits}</div>
+                  <div><strong>Good to know:</strong> {source.terms}</div>
+                  {source.needs && <div><strong>Optional setup:</strong> {source.needs}</div>}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {chosen.length > 0 && (
+        <div className="card settings-card reveal">
+          <div className="card-header">
+            <div><h2>Settings</h2><p>Only the sources you ticked appear here.</p></div>
+            {upTo > 0 && <span className="badge brand plain">Up to <AnimatedNumber value={upTo} /> resumes</span>}
+          </div>
+          <div className="settings-list">
+            {chosen.map((source) => {
+              const Icon = ICONS[source.type];
+              return (
+                <section key={source.type} className="settings-section">
+                  <div className="settings-title"><Icon size={16} /> {source.name}</div>
+                  <SourceOptions type={source.type} opts={opts} update={update} byKeyword={hasKeyword} />
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {batchId && (
         <div className="card" style={{ marginBottom: 16 }}>
@@ -91,41 +158,16 @@ export default function SourcingPage() {
       )}
 
       <ReviewQueue origin="sourcing" />
-
-      {catalog.isLoading && <Loading />}
-      {catalog.isError && <Alert tone="error">{errorMessage(catalog.error)}</Alert>}
-      <div className="grid grid-2">
-        {catalog.data?.map((source) => {
-          const Icon = ICONS[source.type];
-          const on = selected.has(source.type);
-          const disabled = !source.configured;
-          return (
-            <div key={source.type} className={`card source-card ${on ? "selected" : ""}`} style={disabled ? { opacity: 0.7 } : undefined}>
-              <div className="spread">
-                <label className="check" style={{ fontWeight: 650, fontSize: 15 }}>
-                  <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(source.type)} />
-                  <Icon size={18} /> {source.name}
-                </label>
-                {disabled ? <span className="badge amber">Needs setup</span> : <span className="badge green">Ready</span>}
-              </div>
-              <p className="muted">{source.description}</p>
-              {on && <SourceOptions type={source.type} opts={opts} update={update} />}
-              <div className="small muted"><strong>How much:</strong> {source.limits}</div>
-              <div className="small muted"><strong>Good to know:</strong> {source.terms}</div>
-              {source.needs && <div className="small muted"><strong>Optional setup:</strong> {source.needs}</div>}
-            </div>
-          );
-        })}
-      </div>
     </>
   );
 }
 
-function SourceOptions({ type, opts, update }: {
-  type: SourceType; opts: Options; update: <T extends SourceType>(t: T, patch: Partial<Options[T]>) => void;
+function SourceOptions({ type, opts, update, byKeyword }: {
+  type: SourceType; opts: Options; update: <T extends SourceType>(t: T, patch: Partial<Options[T]>) => void; byKeyword: boolean;
 }) {
   const categorySelect = (value: string, onChange: (v: string) => void) => (
-    <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
+    <select className="select" value={byKeyword ? "__keyword" : value} disabled={byKeyword} onChange={(e) => onChange(e.target.value)}>
+      {byKeyword && <option value="__keyword">From your keyword</option>}
       <option value="">Any category</option>
       {CATEGORIES.filter((c) => c !== "Other").map((c) => <option key={c} value={c}>{c}</option>)}
     </select>
@@ -134,6 +176,7 @@ function SourceOptions({ type, opts, update }: {
     <input className="input" type="number" min={1} max={limit} value={value}
            onChange={(e) => onChange(Math.max(1, Math.min(limit, Number(e.target.value) || 1)))} />
   );
+  const fromKeyword = <span className="hint">Set by your keyword above.</span>;
   switch (type) {
     case "huggingface":
       return (
@@ -142,15 +185,19 @@ function SourceOptions({ type, opts, update }: {
             <select className="select" value={opts.huggingface.dataset} onChange={(e) => update("huggingface", { dataset: e.target.value })}>
               <option value="opensporks/resumes">opensporks/resumes (2,484 resumes)</option>
               <option value="ahmedheakl/resume-atlas">ahmedheakl/resume-atlas (13,389 resumes)</option>
-            </select></div>
-          <div className="field"><label>Category</label>{categorySelect(opts.huggingface.category, (v) => update("huggingface", { category: v }))}</div>
-          <div className="field"><label>How many</label>{max(opts.huggingface.max_results, 200, (v) => update("huggingface", { max_results: v }))}</div>
+            </select>
+            <span className="hint">Which public collection to take resumes from. Each collection is a ready-made set of resumes on huggingface.co.</span></div>
+          <div className="field"><label>Category</label>{categorySelect(opts.huggingface.category, (v) => update("huggingface", { category: v }))}
+            <span className="hint">{byKeyword ? "Set by your keyword above." : "The field of work to pick, e.g. IT or Medical."}</span></div>
+          <div className="field"><label>How many</label>{max(opts.huggingface.max_results, 200, (v) => update("huggingface", { max_results: v }))}
+            <span className="hint">Up to 200 per run.</span></div>
         </div>
       );
     case "kaggle":
       return (
         <div className="form-grid">
-          <div className="field"><label>Category</label>{categorySelect(opts.kaggle.category, (v) => update("kaggle", { category: v }))}</div>
+          <div className="field"><label>Category</label>{categorySelect(opts.kaggle.category, (v) => update("kaggle", { category: v }))}
+            <span className="hint">{byKeyword ? "Set by your keyword above." : "The field of work to pick."}</span></div>
           <div className="field"><label>How many</label>{max(opts.kaggle.max_results, 200, (v) => update("kaggle", { max_results: v }))}</div>
         </div>
       );
@@ -158,8 +205,9 @@ function SourceOptions({ type, opts, update }: {
       return (
         <div className="form-grid">
           <div className="field full"><label>Search</label>
-            <input className="input" value={opts.github.query} onChange={(e) => update("github", { query: e.target.value })} />
-            <span className="hint">GitHub user search, e.g. language:java location:bangalore</span></div>
+            <input className="input" value={byKeyword ? "" : opts.github.query} disabled={byKeyword} placeholder={byKeyword ? "Set by your keyword" : undefined}
+                   onChange={(e) => update("github", { query: e.target.value })} />
+            <span className="hint">{byKeyword ? "Built from your keyword." : "GitHub’s own people search, e.g. language:java location:bangalore"}</span></div>
           <div className="field"><label>How many</label>{max(opts.github.max_results, 200, (v) => update("github", { max_results: v }))}</div>
         </div>
       );
@@ -167,7 +215,9 @@ function SourceOptions({ type, opts, update }: {
       return (
         <div className="form-grid">
           <div className="field"><label>Tag</label>
-            <input className="input" value={opts.stackexchange.tag} onChange={(e) => update("stackexchange", { tag: e.target.value })} /></div>
+            <input className="input" value={byKeyword ? "" : opts.stackexchange.tag} disabled={byKeyword} placeholder={byKeyword ? "Set by your keyword" : undefined}
+                   onChange={(e) => update("stackexchange", { tag: e.target.value })} />
+            <span className="hint">{byKeyword ? fromKeyword : "A topic such as python; we take its top answerers."}</span></div>
           <div className="field"><label>How many</label>{max(opts.stackexchange.max_results, 200, (v) => update("stackexchange", { max_results: v }))}</div>
         </div>
       );

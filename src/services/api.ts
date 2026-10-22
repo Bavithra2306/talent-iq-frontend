@@ -24,10 +24,9 @@ export async function downloadFile(url: string, params: Params = {}, fallbackNam
   URL.revokeObjectURL(link.href);
 }
 
-/** Open a PDF/DOCX from the API in a new tab (resumes, JDs). */
-export async function openFile(url: string) {
-  const response = await apiClient.get(url, { responseType: "blob" });
-  window.open(URL.createObjectURL(response.data as Blob), "_blank", "noopener");
+/** Show a resume or JD (PDF, Word preview, image) in the in-page viewer (FileViewerHost). */
+export function openFile(url: string, title?: string) {
+  window.dispatchEvent(new CustomEvent("talentiq:view-file", { detail: { url, title } }));
 }
 
 export const api = {
