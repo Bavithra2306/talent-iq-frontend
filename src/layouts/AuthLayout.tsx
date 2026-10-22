@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-/** Shared frame for the sign-in pages: purple brand panel + white form panel. */
+/** Shared frame for the sign-in pages: blue brand panel + white form panel. */
 const POINTS = [
   "Read hundreds of resumes in minutes",
   "See who fits each job — and why",

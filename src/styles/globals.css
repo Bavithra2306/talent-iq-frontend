@@ -14,20 +14,20 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 40px 48px;
-  color: #f5f3ff;
+  color: #EFF6FF;
   background:
-    radial-gradient(circle at 15% 15%, rgb(192 132 252 / 45%), transparent 40%),
-    radial-gradient(circle at 85% 80%, rgb(139 92 246 / 50%), transparent 45%),
-    linear-gradient(160deg, #4c1d95 0%, #2e1065 100%);
+    radial-gradient(circle at 15% 15%, rgb(56 189 248 / 35%), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgb(29 78 216 / 45%), transparent 45%),
+    linear-gradient(160deg, #1E3A8A 0%, #0F172A 100%);
 }
 
 .auth-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
-.auth-logo b { color: #d8b4fe; font-weight: 700; }
+.auth-logo b { color: #7DD3FC; font-weight: 700; }
 .auth-brand h2 { color: #fff; font-size: 32px; line-height: 1.2; letter-spacing: -0.03em; max-width: 380px; }
 .auth-brand ul { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; font-size: 15px; }
-.auth-brand li { display: flex; align-items: center; gap: 10px; color: #ede9fe; }
-.auth-brand li svg { color: #c4b5fd; flex: none; }
-.auth-foot { color: #c4b5fd; font-size: 12px; }
+.auth-brand li { display: flex; align-items: center; gap: 10px; color: #DBEAFE; }
+.auth-brand li svg { color: #93C5FD; flex: none; }
+.auth-foot { color: #93C5FD; font-size: 12px; }
 
 .auth-main { display: grid; place-items: center; padding: 40px 24px; background: #ffffff; }
 .auth-panel { width: 100%; max-width: 400px; display: grid; gap: 16px; }
