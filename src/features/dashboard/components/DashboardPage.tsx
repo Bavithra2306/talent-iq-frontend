@@ -2,10 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck, FilePlus2, ListChecks, ScrollText, Upload, UserCheck, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
+import { DashCard, StatCard } from "../../../components/ui/cards";
 import { ROLE_LABEL, useSession } from "../../../app/session";
-import { Alert, AnimatedNumber, BarList, ColumnChart, DonutChart, Funnel, Reveal, Skeleton, type Slice } from "../../../components/ui";
+import { Alert, BarList, ColumnChart, DonutChart, Funnel, Skeleton, type Slice } from "../../../components/ui";
 import { api } from "../../../services/api";
-import AgentsPanel from "./AgentsPanel";
 import { STATUS_LABEL } from "../../../utils/format";
 import type { CandidateStatus } from "../../../types/api";
 
@@ -19,8 +19,8 @@ export default function DashboardPage() {
   return (
     <div className="home">
       <div className="home-hello reveal">
-        <h1>{greeting}, {first}</h1>
-        <p>{today} · {ROLE_LABEL[user.role]}</p>
+        <strong>{greeting}, {first}</strong>
+        <span>{today} · {ROLE_LABEL[user.role]}</span>
       </div>
       {user.role === "recruiter" && <RecruiterHome />}
       {user.role === "hiring_manager" && <ManagerHome />}
@@ -29,31 +29,8 @@ export default function DashboardPage() {
   );
 }
 
-function Tile({ label, value, to, icon, delay = 0 }: { label: string; value: number | undefined; to: string; icon: ReactNode; delay?: number }) {
-  return (
-    <Reveal delay={delay}>
-      <Link to={to} className="home-tile">
-        <span className="home-tile-icon">{icon}</span>
-        <span className="home-tile-value">{value === undefined ? <Skeleton w={48} h={30} /> : <AnimatedNumber value={value} />}</span>
-        <span className="home-tile-label">{label}</span>
-      </Link>
-    </Reveal>
-  );
-}
-
 function Action({ to, icon, label, primary }: { to: string; icon: ReactNode; label: string; primary?: boolean }) {
   return <Link to={to} className={`btn home-action ${primary ? "btn-primary" : ""}`}>{icon} {label}</Link>;
-}
-
-function ChartCard({ title, hint, children, delay = 0, wide }: { title: string; hint?: string; children: ReactNode; delay?: number; wide?: boolean }) {
-  return (
-    <Reveal delay={delay} className={`chart-card-wrap ${wide ? "wide" : ""}`}>
-      <div className="card chart-card">
-        <div className="chart-head"><h3>{title}</h3>{hint && <span className="muted small">{hint}</span>}</div>
-        {children}
-      </div>
-    </Reveal>
-  );
 }
 
 const STATUSES = Object.keys(STATUS_LABEL) as CandidateStatus[];
@@ -99,10 +76,10 @@ function RecruiterHome() {
   return (
     <>
       <div className="home-tiles">
-        <Tile label="Resumes" value={resumes.data?.total} to="/resumes" icon={<Upload />} />
-        <Tile label="Open jobs" value={jobs.data?.total} to="/jobs" icon={<FilePlus2 />} delay={60} />
-        <Tile label="Approved by hiring managers" value={c ? approvedPlus : undefined} to="/shortlists" icon={<UserCheck />} delay={120} />
-        <Tile label="Need your review" value={review.data?.length} to="/resumes" icon={<ClipboardCheck />} delay={180} />
+        <StatCard label="Resumes" value={resumes.data?.total} to="/resumes" icon={<Upload />} />
+        <StatCard label="Open jobs" value={jobs.data?.total} to="/jobs" icon={<FilePlus2 />} delay={60} />
+        <StatCard label="Approved by hiring managers" value={c ? approvedPlus : undefined} to="/shortlists" icon={<UserCheck />} delay={120} />
+        <StatCard label="Need your review" value={review.data?.length} to="/resumes" icon={<ClipboardCheck />} delay={180} />
       </div>
       <div className="home-actions">
         <Action to="/resumes" icon={<Upload />} label="Upload resumes" primary />
@@ -113,23 +90,22 @@ function RecruiterHome() {
         <Alert tone="warn">Today’s free search limit is used up. New resumes are still read; they are fully searchable after {quota.data.resumes_at}.</Alert>
       )}
       <div className="chart-grid">
-        <AgentsPanel quota={quota.data} />
-        <ChartCard title="Resumes by field" hint="Click a field to open the list" delay={80}>
-          {categories.isLoading ? <Skeleton h={190} /> : fields.length === 0
+        <DashCard title="Resumes by field" hint="Click a field to open the list" delay={80}>
+          {categories.isLoading ? <Skeleton h={130} /> : fields.length === 0
             ? <p className="muted">No resumes yet. Upload some to see the split.</p>
             : (
               <div className="donut-layout">
-                <DonutChart data={fields} centerLabel="resumes" />
+                <DonutChart data={fields} centerLabel="resumes" size={130} />
                 <BarList data={fields.slice(0, 6)} onSelect={(label) => navigate(`/resumes?category=${encodeURIComponent(label)}`)} />
               </div>
             )}
-        </ChartCard>
-        <ChartCard title="Hiring funnel" hint="Share that carries on at each step" delay={160}>
-          {counts.isLoading ? <Skeleton h={190} /> : <Funnel steps={funnel} />}
-        </ChartCard>
-        <ChartCard title="Matching runs" hint="Last 7 days" delay={240} wide>
-          {runs.isLoading ? <Skeleton h={140} /> : <ColumnChart data={days} />}
-        </ChartCard>
+        </DashCard>
+        <DashCard title="Hiring funnel" hint="How many resumes reach each step" delay={160}>
+          {counts.isLoading ? <Skeleton h={130} /> : <Funnel steps={funnel} />}
+        </DashCard>
+        <DashCard title="Matching runs" hint="Last 7 days" delay={240} wide>
+          {runs.isLoading ? <Skeleton h={100} /> : <ColumnChart data={days} height={80} />}
+        </DashCard>
       </div>
     </>
   );
@@ -150,9 +126,9 @@ function ManagerHome() {
   return (
     <>
       <div className="home-tiles three">
-        <Tile label="To review" value={toReview} to="/review" icon={<ClipboardCheck />} />
-        <Tile label="Approved" value={approved} to="/review" icon={<ListChecks />} delay={60} />
-        <Tile label="Rejected" value={rejected} to="/review" icon={<FilePlus2 />} delay={120} />
+        <StatCard label="To review" value={toReview} to="/review" icon={<ClipboardCheck />} />
+        <StatCard label="Approved" value={approved} to="/review" icon={<ListChecks />} delay={60} />
+        <StatCard label="Rejected" value={rejected} to="/review" icon={<FilePlus2 />} delay={120} />
       </div>
       <div className="home-actions">
         <Action to="/review" icon={<ClipboardCheck />} label="Review candidates" primary />
@@ -160,11 +136,11 @@ function ManagerHome() {
         <Action to="/jobs" icon={<ListChecks />} label="See jobs" />
       </div>
       <div className="chart-grid single">
-        <ChartCard title="Your decisions" hint="Candidates shared with you" delay={80}>
-          {shared.isLoading ? <Skeleton h={190} /> : split.length === 0
+        <DashCard title="Your decisions" hint="Candidates shared with you" delay={80}>
+          {shared.isLoading ? <Skeleton h={130} /> : split.length === 0
             ? <p className="muted">Nobody has been shared with you yet. Shortlists from recruiters appear here.</p>
-            : <div className="donut-layout"><DonutChart data={split} centerLabel="candidates" /><BarList data={split} /></div>}
-        </ChartCard>
+            : <div className="donut-layout"><DonutChart data={split} centerLabel="candidates" size={130} /><BarList data={split} /></div>}
+        </DashCard>
       </div>
     </>
   );
@@ -186,19 +162,19 @@ function AdminHome() {
   return (
     <>
       <div className="home-tiles">
-        <Tile label="Recruiters" value={count((r, s) => r === "recruiter" && s !== "invite_sent")} to="/team" icon={<Upload />} />
-        <Tile label="Hiring managers" value={count((r, s) => r === "hiring_manager" && s !== "invite_sent")} to="/team" icon={<ClipboardCheck />} delay={60} />
-        <Tile label="Invites not accepted" value={count((_, s) => s === "invite_sent")} to="/team" icon={<UserPlus />} delay={120} />
-        <Tile label="Not signed in yet" value={count((_, s) => s === "pending")} to="/team" icon={<ListChecks />} delay={180} />
+        <StatCard label="Recruiters" value={count((r, s) => r === "recruiter" && s !== "invite_sent")} to="/team" icon={<Upload />} />
+        <StatCard label="Hiring managers" value={count((r, s) => r === "hiring_manager" && s !== "invite_sent")} to="/team" icon={<ClipboardCheck />} delay={60} />
+        <StatCard label="Invites not accepted" value={count((_, s) => s === "invite_sent")} to="/team" icon={<UserPlus />} delay={120} />
+        <StatCard label="Not signed in yet" value={count((_, s) => s === "pending")} to="/team" icon={<ListChecks />} delay={180} />
       </div>
       <div className="home-actions">
         <Action to="/team" icon={<UserPlus />} label="Invite someone" primary />
         <Action to="/logs" icon={<ScrollText />} label="Activity log" />
       </div>
       <div className="chart-grid single">
-        <ChartCard title="Team status" hint="Everyone on TalentIQ" delay={80}>
-          {team.isLoading ? <Skeleton h={190} /> : <div className="donut-layout"><DonutChart data={split} centerLabel="people" /><BarList data={split} /></div>}
-        </ChartCard>
+        <DashCard title="Team status" hint="Everyone on TalentIQ" delay={80}>
+          {team.isLoading ? <Skeleton h={130} /> : <div className="donut-layout"><DonutChart data={split} centerLabel="people" size={130} /><BarList data={split} /></div>}
+        </DashCard>
       </div>
     </>
   );
