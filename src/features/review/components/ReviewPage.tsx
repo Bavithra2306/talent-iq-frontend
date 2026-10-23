@@ -147,7 +147,7 @@ export default function ReviewPage() {
       )}
 
       {open && (
-        <Drawer title="Candidate details" onClose={() => setOpen(null)} wide>
+        <Drawer title="Candidate details" onClose={() => setOpen(null)} half>
           <EntryDetail entry={open} onOpenResume={() => openFile(`/api/v1/review/${open.id}/resume`, open.name ?? "Resume")} />
         </Drawer>
       )}
