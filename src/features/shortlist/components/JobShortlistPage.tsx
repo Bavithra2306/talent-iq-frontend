@@ -17,20 +17,7 @@ const WEIGHT_LABELS: [keyof Weights, string, string][] = [
   ["skill_pct", "Skills", "#1D4ED8"], ["role_pct", "Role", "#0EA5E9"], ["exp_pct", "Experience", "#16A34A"], ["edu_pct", "Education", "#F59E0B"],
 ];
 
-/** Move one slider and spread the rest so the four always add up to 100. */
-function rebalance(w: Weights, key: keyof Weights, value: number): Weights {
-  const others = (Object.keys(w) as (keyof Weights)[]).filter((k) => k !== key);
-  const rest = 100 - value;
-  const base = others.reduce((sum, k) => sum + w[k], 0);
-  const next = { ...w, [key]: value };
-  let used = 0;
-  others.forEach((k, i) => {
-    const share = i === others.length - 1 ? rest - used : Math.round(base === 0 ? rest / others.length : (w[k] / base) * rest);
-    next[k] = Math.max(0, share);
-    used += next[k];
-  });
-  return next;
-}
+const total = (w: Weights) => w.skill_pct + w.role_pct + w.exp_pct + w.edu_pct;
 
 interface ResultFilters {
   skills: string[]; location: string; min_experience: string; max_experience: string;
@@ -149,7 +136,7 @@ export default function JobShortlistPage() {
     onError: (err) => toast(errorMessage(err), "error"),
   });
 
-  const sum = weights ? weights.skill_pct + weights.role_pct + weights.exp_pct + weights.edu_pct : 100;
+  const sum = weights ? total(weights) : 100;
   const toShare = useMemo(() => picked.data?.items.filter((e) => !e.shared_to).length ?? 0, [picked.data]);
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
   const s = runStatus.data;
@@ -194,34 +181,28 @@ export default function JobShortlistPage() {
         {/* ---- weights ---- */}
         <div className="card">
           <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> How the score is made</h2>
-            <p>Drag a slider and watch the ranking change. The others adjust so the total stays 100%.</p></div></div>
+            <p>Drag a slider and watch the ranking change. The four must add up to 100%; change the others yourself until they do.</p></div></div>
           <div className="card-body stack">
-            {weights && (
-              <div className="weight-bar" aria-hidden="true">
-                {WEIGHT_LABELS.map(([key, label, color]) => (
-                  <span key={key} style={{ width: `${weights[key]}%`, background: color }} title={`${label} ${weights[key]}%`}>{weights[key] >= 12 ? `${weights[key]}%` : ""}</span>
-                ))}
-              </div>
-            )}
             {weights && WEIGHT_LABELS.map(([key, label, color]) => (
               <div key={key} className="slider-row">
                 <span><i className="dot-swatch" style={{ background: color }} /> {label}</span>
                 <input type="range" className="weight-slider" min={0} max={100} step={5} value={weights[key]}
                        style={{ ["--c" as string]: color, ["--v" as string]: `${weights[key]}%` }} aria-label={`${label} weight`}
-                       onChange={(e) => { setWeights(rebalance(weights, key, Number(e.target.value))); setPreview(true); }} />
+                       onChange={(e) => { const next = { ...weights, [key]: Number(e.target.value) }; setWeights(next); setPreview(total(next) === 100); }} />
                 <strong style={{ textAlign: "right" }}>{weights[key]}%</strong>
               </div>
             ))}
             <div className="spread">
               <span className={sum === 100 ? "muted" : ""} style={sum === 100 ? undefined : { color: "var(--red-600)", fontWeight: 600 }}>
-                Total {sum}% {sum !== 100 && "— must be 100%"}
+                Total {sum}% {sum !== 100 && "— the four weights must add up to 100% before you can save"}
               </span>
               <div className="row">
                 <button className="btn btn-sm" onClick={() => { setWeights({ skill_pct: 40, role_pct: 20, exp_pct: 25, edu_pct: 15 }); setPreview(true); }}>Reset</button>
                 <button className="btn btn-sm btn-primary" disabled={sum !== 100 || saveWeights.isPending} onClick={() => weights && saveWeights.mutate(weights)}>Save</button>
               </div>
             </div>
-            {preview && <Alert>Live preview: the ranking below uses these weights. Press Save to keep them.</Alert>}
+            {sum !== 100 && <Alert tone="warn">The weights add up to {sum}%. Change them until the total is exactly 100%.</Alert>}
+            {preview && sum === 100 && <Alert>Live preview: the ranking below uses these weights. Press Save to keep them.</Alert>}
             {saveWeights.isError && <Alert tone="error">{errorMessage(saveWeights.error)}</Alert>}
           </div>
         </div>
