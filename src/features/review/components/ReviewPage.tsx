@@ -1,61 +1,59 @@
-import { useMemo, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ClipboardCheck, Eye, FileText, GripVertical, X } from "lucide-react";
-import {
-  Alert, AnimatedNumber, Drawer, Empty, ScoreRing, Skeleton, useToast,
-} from "../../../components/ui";
-import { PageHeader } from "../../../components/ui";
+import { Check, ClipboardCheck, Eye, FileText, X } from "lucide-react";
+import { Alert, AnimatedNumber, Drawer, Empty, Loading, PageHeader, Pagination, ScoreBar, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatYears } from "../../../utils/format";
 import type { ShortlistEntry } from "../../../types/api";
 import EntryDetail from "../../shortlist/components/EntryDetail";
 
-type ColumnKey = "review" | "approved" | "rejected";
+type Tab = "review" | "approved" | "rejected";
 
-const COLUMNS: { key: ColumnKey; title: string; tone: string; hint: string; drop?: "approved" | "rejected" }[] = [
-  { key: "review", title: "To review", tone: "amber", hint: "Waiting for your decision" },
-  { key: "approved", title: "Approved", tone: "green", hint: "Drop here to approve", drop: "approved" },
-  { key: "rejected", title: "Rejected", tone: "red", hint: "Drop here to reject", drop: "rejected" },
+const TABS: { key: Tab; label: string }[] = [
+  { key: "review", label: "To review" },
+  { key: "approved", label: "Approved" },
+  { key: "rejected", label: "Rejected" },
 ];
+const LIMIT = 15;
 
-function columnOf(e: ShortlistEntry): ColumnKey {
+function tabOf(e: ShortlistEntry): Tab {
   if (e.status === "approved") return "approved";
   if (e.status === "rejected") return "rejected";
   return "review";
 }
 
-/** Hiring manager: candidates recruiters shared with me, as a board. */
+/** Hiring manager: the candidates recruiters shared with me, in one tidy table with three tabs. */
 export default function ReviewPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<Tab>("review");
   const [jobId, setJobId] = useState("");
+  const [offset, setOffset] = useState(0);
   const [open, setOpen] = useState<ShortlistEntry | null>(null);
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [over, setOver] = useState<ColumnKey | null>(null);
+  useEffect(() => setOffset(0), [tab, jobId]); // a new tab or job starts from the first page
 
   const all = useQuery({ queryKey: ["review", "all"], queryFn: () => api.sharedWithMe({}) });
   const shared = useMemo(() => (all.data ?? []).filter((e) => !jobId || e.job_id === jobId), [all.data, jobId]);
-  const byColumn = useMemo(() => {
-    const map: Record<ColumnKey, ShortlistEntry[]> = { review: [], approved: [], rejected: [] };
-    for (const e of shared) map[columnOf(e)].push(e);
-    for (const list of Object.values(map)) list.sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0));
-    return map;
+  const counts = useMemo(() => {
+    const c: Record<Tab, number> = { review: 0, approved: 0, rejected: 0 };
+    for (const e of shared) c[tabOf(e)] += 1;
+    return c;
   }, [shared]);
+  const rows = useMemo(
+    () => shared.filter((e) => tabOf(e) === tab).sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0)),
+    [shared, tab],
+  );
+  const page = rows.slice(offset, offset + LIMIT);
   const jobs = useMemo(() => {
-    const map = new Map<string, { title: string; total: number; pending: number }>();
-    for (const e of all.data ?? []) {
-      const j = map.get(e.job_id) ?? { title: e.job_title ?? "Job", total: 0, pending: 0 };
-      j.total += 1;
-      if (columnOf(e) === "review") j.pending += 1;
-      map.set(e.job_id, j);
-    }
+    const map = new Map<string, string>();
+    for (const e of all.data ?? []) map.set(e.job_id, e.job_title ?? "Job");
     return [...map.entries()];
   }, [all.data]);
 
   const decide = useMutation({
     mutationFn: ({ entry, decision }: { entry: ShortlistEntry; decision: "approved" | "rejected" }) => api.decide(entry.id, decision, ""),
-    // Move the card at once; roll back if the server says no.
+    // Move the row at once; roll back if the server says no.
     onMutate: async ({ entry, decision }) => {
       await queryClient.cancelQueries({ queryKey: ["review", "all"] });
       const before = queryClient.getQueryData<ShortlistEntry[]>(["review", "all"]);
@@ -69,122 +67,90 @@ export default function ReviewPage() {
     },
     onSettled: () => void queryClient.invalidateQueries({ queryKey: ["review"] }),
   });
-
   const reject = (e: ShortlistEntry) => {
     if (window.confirm(`Reject ${e.name ?? "this candidate"}?`)) decide.mutate({ entry: e, decision: "rejected" });
   };
-  const onDrop = (ev: DragEvent, target: "approved" | "rejected") => {
-    ev.preventDefault();
-    setOver(null);
-    const id = ev.dataTransfer.getData("text/plain") || dragging;
-    setDragging(null);
-    const entry = shared.find((x) => x.id === id);
-    if (!entry || entry.status === target) return;
-    if (target === "rejected") reject(entry); else decide.mutate({ entry, decision: "approved" });
-  };
 
   const total = shared.length;
-  const reviewed = total - byColumn.review.length;
+  const reviewed = total - counts.review;
 
   return (
     <>
-      <PageHeader title="Review candidates" subtitle="Drag a candidate into Approved or Rejected, or use the buttons." />
+      <PageHeader title="Review candidates" subtitle="Open a candidate to see why they were picked, then approve or reject." />
 
-      {all.isLoading && <div className="board"><Skeleton h={260} r={14} /><Skeleton h={260} r={14} /><Skeleton h={260} r={14} /></div>}
+      {all.isLoading && <Loading />}
       {all.isError && <Alert tone="error">{errorMessage(all.error)}</Alert>}
 
-      {all.data && total === 0 && !jobId && (
+      {all.data && all.data.length === 0 && (
         <div className="card"><Empty title="Nothing here" icon={<ClipboardCheck />}>When a recruiter shares candidates with you, they appear here.</Empty></div>
       )}
 
       {all.data && all.data.length > 0 && (
-        <>
-          <div className="review-top">
-            <div className="chips">
-              <button className={`chip ${jobId === "" ? "active" : ""}`} onClick={() => setJobId("")}>All jobs <span className="count">{all.data.length}</span></button>
-              {jobs.map(([id, j]) => (
-                <button key={id} className={`chip ${jobId === id ? "active" : ""}`} onClick={() => setJobId(jobId === id ? "" : id)}>
-                  {j.title} {j.pending > 0 && <span className="count">{j.pending} to review</span>}
+        <div className="card">
+          <div className="toolbar">
+            <div className="segmented" role="tablist" aria-label="Review status">
+              {TABS.map((t) => (
+                <button key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "active" : ""} onClick={() => setTab(t.key)}>
+                  {t.label} <span className="tab-count"><AnimatedNumber value={counts[t.key]} duration={300} /></span>
                 </button>
               ))}
             </div>
-            <div className="review-progress" title={`${reviewed} of ${total} reviewed`}>
-              <span className="muted small"><strong><AnimatedNumber value={reviewed} /></strong> of {total} reviewed</span>
-              <span className="upload-bar slim"><span style={{ width: `${total ? (reviewed / total) * 100 : 0}%` }} /></span>
-            </div>
+            <select className="select" value={jobId} onChange={(e) => setJobId(e.target.value)} aria-label="Job">
+              <option value="">All jobs</option>
+              {jobs.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
+            </select>
+            <span className="review-progress-line muted small">{reviewed} of {total} reviewed</span>
           </div>
 
-          <div className="board">
-            {COLUMNS.map((col) => {
-              const list = byColumn[col.key];
-              const droppable = Boolean(col.drop);
-              return (
-                <section key={col.key} className={`board-col tone-${col.tone} ${over === col.key ? "over" : ""} ${dragging && droppable ? "can-drop" : ""}`}
-                         onDragOver={droppable ? (ev) => { ev.preventDefault(); setOver(col.key); } : undefined}
-                         onDragLeave={droppable ? () => setOver((o) => (o === col.key ? null : o)) : undefined}
-                         onDrop={col.drop ? (ev) => onDrop(ev, col.drop!) : undefined}>
-                  <header className="board-head">
-                    <span className={`board-dot ${col.tone}`} />
-                    <strong>{col.title}</strong>
-                    <span className="board-count"><AnimatedNumber value={list.length} duration={400} /></span>
-                  </header>
-                  <div className="board-list">
-                    {list.length === 0 && <div className="board-empty muted small">{dragging && droppable ? col.hint : "Nobody here"}</div>}
-                    {list.map((e) => (
-                      <ReviewCard key={e.id} entry={e} dragging={dragging === e.id} busy={decide.isPending}
-                                  onDragStart={(ev) => { ev.dataTransfer.setData("text/plain", e.id); ev.dataTransfer.effectAllowed = "move"; setDragging(e.id); }}
-                                  onDragEnd={() => { setDragging(null); setOver(null); }}
-                                  onDetails={() => setOpen(e)}
-                                  onApprove={() => decide.mutate({ entry: e, decision: "approved" })}
-                                  onReject={() => reject(e)} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        </>
+          {rows.length === 0 ? (
+            <Empty title={tab === "review" ? "You are all caught up" : "Nobody here yet"} icon={<ClipboardCheck />}>
+              {tab === "review" ? "No candidates are waiting for your decision." : `No ${tab} candidates${jobId ? " for this job" : ""}.`}
+            </Empty>
+          ) : (
+            <div className="table-wrap">
+              <table className="table review-table">
+                <thead><tr><th>Candidate</th><th>Job</th><th>Score</th><th style={{ textAlign: "right" }}>Actions</th></tr></thead>
+                <tbody>
+                  {page.map((e) => (
+                    <tr key={e.id} className="clickable" onClick={() => setOpen(e)}>
+                      <td>
+                        <div className="cell-title">{e.name ?? "Name not given"}</div>
+                        <div className="cell-sub">{[e.current_title, formatYears(e.total_years_experience)].filter((x) => x && x !== "—").join(" · ")}</div>
+                      </td>
+                      <td>{e.job_title}</td>
+                      <td style={{ minWidth: 140 }}><ScoreBar value={e.total_score} /></td>
+                      <td onClick={(ev) => ev.stopPropagation()}>
+                        <div className="row review-actions">
+                          <button className="btn btn-sm btn-icon" title="Details" aria-label="Details" onClick={() => setOpen(e)}><Eye /></button>
+                          <button className="btn btn-sm btn-icon" title="View resume" aria-label="View resume"
+                                  onClick={() => openFile(`/api/v1/review/${e.id}/resume`, e.name ?? "Resume")}><FileText /></button>
+                          <button className="btn btn-sm btn-success btn-icon" title="Approve" aria-label="Approve" disabled={e.status === "approved" || decide.isPending}
+                                  onClick={() => decide.mutate({ entry: e, decision: "approved" })}><Check /></button>
+                          <button className="btn btn-sm btn-danger btn-icon" title="Reject" aria-label="Reject" disabled={e.status === "rejected" || decide.isPending}
+                                  onClick={() => reject(e)}><X /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <Pagination total={rows.length} limit={LIMIT} offset={offset} onChange={setOffset} />
+        </div>
       )}
 
       {open && (
-        <Drawer title="Candidate details" onClose={() => setOpen(null)} half>
+        <Drawer title="Candidate details" onClose={() => setOpen(null)} half
+                footer={tabOf(open) === "review" ? (
+                  <>
+                    <button className="btn btn-danger" disabled={decide.isPending} onClick={() => { reject(open); setOpen(null); }}><X /> Reject</button>
+                    <button className="btn btn-success" disabled={decide.isPending} onClick={() => { decide.mutate({ entry: open, decision: "approved" }); setOpen(null); }}><Check /> Approve</button>
+                  </>
+                ) : undefined}>
           <EntryDetail entry={open} onOpenResume={() => openFile(`/api/v1/review/${open.id}/resume`, open.name ?? "Resume")} />
         </Drawer>
       )}
     </>
-  );
-}
-
-function ReviewCard({ entry: e, dragging, busy, onDragStart, onDragEnd, onDetails, onApprove, onReject }: {
-  entry: ShortlistEntry; dragging: boolean; busy: boolean;
-  onDragStart: (ev: DragEvent) => void; onDragEnd: () => void; onDetails: () => void; onApprove: () => void; onReject: () => void;
-}): ReactNode {
-  return (
-    <article className={`kanban-card ${dragging ? "dragging" : ""}`} draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="kanban-top">
-        <GripVertical size={14} className="grip" />
-        <ScoreRing value={e.total_score} />
-        <div className="kanban-who">
-          <strong title={e.name ?? ""}>{e.name ?? "Name not given"}</strong>
-          <span className="muted small">{[e.current_title, formatYears(e.total_years_experience)].filter((x) => x && x !== "—").join(" · ")}</span>
-          <span className="muted small">For: {e.job_title}</span>
-        </div>
-      </div>
-      {e.explanation?.summary && <p className="kanban-summary small">{e.explanation.summary}</p>}
-      {Boolean(e.explanation?.strengths?.length || e.explanation?.gaps?.length) && (
-        <div className="chips">
-          {e.explanation?.strengths?.slice(0, 2).map((s) => <span key={s} className="tag green">+ {s}</span>)}
-          {e.explanation?.gaps?.slice(0, 1).map((s) => <span key={s} className="tag red">− {s}</span>)}
-        </div>
-      )}
-      {e.notes_by_recruiter && <div className="notes small"><strong>Recruiter’s note:</strong> {e.notes_by_recruiter}</div>}
-      <div className="kanban-actions">
-        <button className="btn btn-sm" onClick={onDetails}><Eye /> Details</button>
-        <button className="btn btn-sm" onClick={() => openFile(`/api/v1/review/${e.id}/resume`, e.name ?? "Resume")}><FileText /> Resume</button>
-        <span style={{ flex: 1 }} />
-        <button className="btn btn-sm btn-success btn-icon" title="Approve" aria-label="Approve" disabled={e.status === "approved" || busy} onClick={onApprove}><Check /></button>
-        <button className="btn btn-sm btn-danger btn-icon" title="Reject" aria-label="Reject" disabled={e.status === "rejected" || busy} onClick={onReject}><X /></button>
-      </div>
-    </article>
   );
 }
