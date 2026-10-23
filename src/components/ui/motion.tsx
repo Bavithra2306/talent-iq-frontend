@@ -99,7 +99,7 @@ export function BarList({ data, onSelect }: { data: Slice[]; onSelect?: (label: 
     <div className="barlist">
       {data.map((d, i) => (
         <button key={d.label} type="button" className="barlist-row" onClick={() => onSelect?.(d.label)} disabled={!onSelect}>
-          <span className="barlist-label">{d.label}</span>
+          <span className="barlist-label"><i className="barlist-dot" style={{ background: d.color ?? PALETTE[i % PALETTE.length] }} />{d.label}</span>
           <span className="barlist-track">
             <span className="barlist-fill" style={{ width: mounted ? `${(d.value / max) * 100}%` : 0, background: d.color ?? PALETTE[i % PALETTE.length], transitionDelay: `${i * 60}ms` }} />
           </span>

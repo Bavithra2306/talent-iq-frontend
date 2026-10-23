@@ -96,7 +96,7 @@ function RecruiterHome() {
             : (
               <div className="donut-layout">
                 <DonutChart data={fields} centerLabel="resumes" size={130} />
-                <BarList data={fields.slice(0, 6)} onSelect={(label) => navigate(`/resumes?category=${encodeURIComponent(label)}`)} />
+                <BarList data={fields} onSelect={(label) => navigate(`/resumes?category=${encodeURIComponent(label)}`)} />
               </div>
             )}
         </DashCard>

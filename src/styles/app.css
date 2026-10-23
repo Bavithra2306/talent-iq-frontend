@@ -1040,3 +1040,7 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .shell.collapsed .sidebar-top { flex-direction: row; align-items: center; justify-content: center; gap: 6px; }
 .shell.collapsed .sidebar-top .sidebar-brand { flex: none; padding: 4px 0; }
 .shell.collapsed .sidebar-toggle { margin-top: 0; }
+
+/* every field is listed; the list scrolls inside the small card */
+.barlist-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.donut-layout .barlist { max-height: 150px; overflow-y: auto; padding-right: 4px; align-content: start; }
