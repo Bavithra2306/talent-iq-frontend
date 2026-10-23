@@ -25,7 +25,7 @@ export default function ResumesPage() {
   const [batchId, setBatchId] = useState<string | null>(storedBatch);
   const [rejected, setRejected] = useState<{ filename: string; reason: string }[]>([]);
   const [searchParams] = useSearchParams();
-  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", skill: "", location: "", min_experience: "", status: "", sort: "date_added", order: "desc" });
+  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", min_experience: "", max_experience: "", status: "", sort: "date_added", order: "desc" });
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -159,13 +159,15 @@ export default function ResumesPage() {
           </select>
           <div className="row grow" style={{ position: "relative" }}>
             <Search size={15} style={{ position: "absolute", left: 9, color: "var(--ink-400)" }} />
-            <input className="input grow" style={{ paddingLeft: 30 }} placeholder="Name, email or title"
+            <input className="input grow" style={{ paddingLeft: 30 }} placeholder="Search name, skill, title or place"
                    value={filters.search} onChange={(e) => setFilter("search", e.target.value)} />
           </div>
-          <input className="input" placeholder="Skill" value={filters.skill} onChange={(e) => setFilter("skill", e.target.value)} />
-          <input className="input" placeholder="Location" value={filters.location} onChange={(e) => setFilter("location", e.target.value)} />
-          <input className="input" type="number" min={0} placeholder="Min yrs"
-                 value={filters.min_experience} onChange={(e) => setFilter("min_experience", e.target.value)} />
+<select className="select" aria-label="Experience" value={`${filters.min_experience}-${filters.max_experience}`}
+                  onChange={(e) => { const [lo, hi] = e.target.value.split("-"); setFilters((f) => ({ ...f, min_experience: lo, max_experience: hi })); setOffset(0); }}>
+            <option value="-">Any experience</option>
+            <option value="0-2">0-2 yrs</option><option value="3-5">3-5 yrs</option>
+            <option value="6-9">6-9 yrs</option><option value="10-">10+ yrs</option>
+          </select>
           <select className="select" value={filters.status} onChange={(e) => setFilter("status", e.target.value)}>
             <option value="">Any status</option>
             <option value="new">New</option>
