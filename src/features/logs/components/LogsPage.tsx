@@ -136,7 +136,7 @@ export default function LogsPage() {
           <strong>Each line is one step.</strong> <em>Time</em> is when it happened. <em>Step</em> is where the run was
           (started, comparing, reading, scoring, done, or failed). <em>Input</em> is what the step was given
           (for example the number of files). <em>Output</em> is what came out (counts, seconds, or the reason it failed).
-          <em> Job</em> is the job it belongs to. <strong>By run</strong> puts all the steps of one upload or matching run together.
+          <em> Job</em> is the job it belongs to. <strong>Runs</strong> puts all the steps of one upload or matching run on one row; click a row to see its steps.
         </Alert>
       )}
 
@@ -150,7 +150,7 @@ export default function LogsPage() {
       <div className="card">
         <div className="toolbar">
           <div className="segmented" role="tablist" aria-label="Log view">
-            <button role="tab" aria-selected={view === "runs"} className={view === "runs" ? "active" : ""} onClick={() => setView("runs")}><Layers /> By run</button>
+            <button role="tab" aria-selected={view === "runs"} className={view === "runs" ? "active" : ""} onClick={() => setView("runs")}><Layers /> Runs</button>
             <button role="tab" aria-selected={view === "list"} className={view === "list" ? "active" : ""} onClick={() => setView("list")}><List /> All steps</button>
           </div>
           <div className="row grow" style={{ position: "relative" }}>
@@ -200,37 +200,49 @@ export default function LogsPage() {
           visibleRuns.length === 0
             ? <Empty title="No activity yet" icon={<ScrollText />}>Uploads, sourcing and matching runs appear here.</Empty>
             : (
-              <div className="run-list">
-                {visibleRuns.map((r) => {
-                  const isOpen = open.has(r.key);
-                  const secs = Math.max(0, Math.round((asUtc(r.last).getTime() - asUtc(r.first).getTime()) / 1000));
-                  return (
-                    <div key={r.key} className={`run ${isOpen ? "open" : ""}`}>
-                      <button className="run-head" onClick={() => toggle(r.key)} aria-expanded={isOpen}>
-                        <ChevronRight size={16} className="run-chevron" />
-                        <span className="run-title"><strong>{RUN_TITLE[r.area] ?? describeArea(r.area)}</strong><span className="muted small">{jobTitle(r.jobId)}</span></span>
-                        <span className="run-meta muted small">{r.events.length} step{r.events.length === 1 ? "" : "s"}{secs > 0 && ` · ${secs}s`}</span>
-                        <span className={`badge ${STATE_TONE[r.state]}`}>{r.label}</span>
-                        <time className="muted small">{formatDateTime(r.last)}</time>
-                      </button>
-                      {isOpen && (
-                        <ol className="run-steps">
-                          {r.events.map((e) => (
-                            <li key={e.id} className={`run-step ${e.stage === "failed" ? "bad" : e.stage === "shortlisted" ? "ok" : ""}`}>
-                              <span className="run-step-dot" />
-                              <time className="muted small">{formatTime(e.at)}</time>
-                              <span>
-                                <strong>{e.action ? describeAction(e.action) : e.stage ? labelize(e.stage) : describeArea(e.category)}</strong>
-                                {outputText(e) && <span className="muted"> — {outputText(e)}</span>}
-                                {friendlyDetails(e.input_data) && <div className="muted small">Input: {friendlyDetails(e.input_data)}</div>}
-                              </span>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="table-wrap">
+                <table className="table">
+                  <thead><tr><th></th><th>Time</th><th>Activity</th><th>Job</th><th>Steps</th><th>Took</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {visibleRuns.map((r) => {
+                      const isOpen = open.has(r.key);
+                      const secs = Math.max(0, Math.round((asUtc(r.last).getTime() - asUtc(r.first).getTime()) / 1000));
+                      return (
+                        <Fragment key={r.key}>
+                          <tr className="clickable" onClick={() => toggle(r.key)} aria-expanded={isOpen}>
+                            <td style={{ width: 28 }}><ChevronRight size={15} className={`run-chevron ${isOpen ? "turned" : ""}`} /></td>
+                            <td className="muted" style={{ whiteSpace: "nowrap" }}>{formatDateTime(r.last)}</td>
+                            <td><strong>{RUN_TITLE[r.area] ?? describeArea(r.area)}</strong></td>
+                            <td>{jobTitle(r.jobId)}</td>
+                            <td>{r.events.length}</td>
+                            <td className="muted">{secs > 0 ? `${secs}s` : "—"}</td>
+                            <td><span className={`badge ${STATE_TONE[r.state]}`}>{r.label}</span></td>
+                          </tr>
+                          {isOpen && (
+                            <tr className="log-detail-row">
+                              <td></td>
+                              <td colSpan={6}>
+                                <table className="table steps-table">
+                                  <thead><tr><th>Time</th><th>Step</th><th>Input</th><th>Result</th></tr></thead>
+                                  <tbody>
+                                    {r.events.map((e) => (
+                                      <tr key={e.id} className={e.stage === "failed" ? "step-bad" : ""}>
+                                        <td className="muted" style={{ whiteSpace: "nowrap" }}>{formatTime(e.at)}</td>
+                                        <td><strong>{e.action ? describeAction(e.action) : e.stage ? labelize(e.stage) : describeArea(e.category)}</strong></td>
+                                        <td className="small muted">{friendlyDetails(e.input_data) || "—"}</td>
+                                        <td className="small">{outputText(e) || "—"}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )
         )}

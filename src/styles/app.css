@@ -1065,3 +1065,13 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .nav a.active { box-shadow: inset 3px 0 0 var(--gold-400); }
 .auth-wordmark b, .brand-name span { color: var(--gold-400); }
 .cand-rank.top { background: var(--gold-100); color: #92400E; }
+
+/* activity log tables */
+.steps-table { margin: 4px 0 8px; background: var(--ink-50); border-radius: 10px; }
+.steps-table th { background: transparent; }
+.steps-table .step-bad td { color: var(--red-600); }
+.log-detail-row > td { padding-top: 0; }
+
+/* the profile menu opens above its button */
+.sidebar .menu { bottom: calc(100% + 10px); top: auto; left: 4px; right: auto; width: 214px; min-width: 0; transform-origin: bottom left; animation: pop .14s ease-out both; }
+.sidebar .menu::after { content: ""; position: absolute; left: 22px; bottom: -6px; width: 12px; height: 12px; background: var(--surface); border-right: 1px solid var(--ink-200); border-bottom: 1px solid var(--ink-200); transform: rotate(45deg); }
