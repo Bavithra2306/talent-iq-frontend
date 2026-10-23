@@ -232,21 +232,38 @@ export function FileDrop({ accept, multiple, folders, compact, onFiles, hint }: 
   );
 }
 
+/** The pages to show: the first, the last and a few around the current one, with "…" for the gaps. */
+function pageList(page: number, pages: number): (number | "gap")[] {
+  const wanted = new Set([1, pages, page - 1, page, page + 1]);
+  const list: (number | "gap")[] = [];
+  let last = 0;
+  for (const n of [...wanted].filter((n) => n >= 1 && n <= pages).sort((x, y) => x - y)) {
+    if (n - last > 1) list.push("gap");
+    list.push(n);
+    last = n;
+  }
+  return list;
+}
+
+/** The only pagination in the app: every list uses this. */
 export function Pagination({ total, limit, offset, onChange }: {
   total: number; limit: number; offset: number; onChange: (offset: number) => void;
 }) {
   if (total <= limit) return null;
   const page = Math.floor(offset / limit) + 1;
   const pages = Math.ceil(total / limit);
+  const go = (n: number) => onChange((n - 1) * limit);
   return (
-    <div className="pagination">
-      <span>{offset + 1}–{Math.min(offset + limit, total)} of {total}</span>
-      <div className="row">
-        <button className="btn btn-sm" disabled={page <= 1} onClick={() => onChange(offset - limit)}>Previous</button>
-        <span>Page {page} of {pages}</span>
-        <button className="btn btn-sm" disabled={page >= pages} onClick={() => onChange(offset + limit)}>Next</button>
+    <nav className="pagination" aria-label="Pages">
+      <span className="muted">{offset + 1}–{Math.min(offset + limit, total)} of {total}</span>
+      <div className="pager">
+        <button className="pager-btn" disabled={page <= 1} onClick={() => go(page - 1)} aria-label="Previous page">‹</button>
+        {pageList(page, pages).map((n, i) => n === "gap"
+          ? <span key={`gap${i}`} className="pager-gap">…</span>
+          : <button key={n} className={`pager-btn ${n === page ? "on" : ""}`} aria-current={n === page ? "page" : undefined} onClick={() => go(n)}>{n}</button>)}
+        <button className="pager-btn" disabled={page >= pages} onClick={() => go(page + 1)} aria-label="Next page">›</button>
       </div>
-    </div>
+    </nav>
   );
 }
 

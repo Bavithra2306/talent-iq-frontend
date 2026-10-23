@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, FileText, ListChecks, Search } from "lucide-react";
-import { Alert, Drawer, Empty, Loading, PageHeader, ScoreBar, StatusBadge, useToast } from "../../../components/ui";
+import { Alert, Drawer, Empty, Loading, PageHeader, Pagination, ScoreBar, StatusBadge, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatYears, STATUS_LABEL } from "../../../utils/format";
 import type { ShortlistEntry } from "../../../types/api";
 import EntryDetail from "./EntryDetail";
 import JobSummary from "./JobSummary";
+
+const LIMIT = 15;
 
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
@@ -25,9 +27,13 @@ export default function ShortlistsPage() {
     )),
   });
   const jobs = useQuery({ queryKey: ["jobs", "open-all"], queryFn: () => api.listJobs({ status: "open", limit: 100 }) });
+  const [offset, setOffset] = useState(0);
+  const filterKey = JSON.stringify(view);
+  useEffect(() => setOffset(0), [filterKey]); // a new filter starts from the first page
   const entries = useQuery({
-    queryKey: ["all-shortlists", view],
-    queryFn: () => api.allShortlists({ ...view, limit: 100 }),
+    queryKey: ["all-shortlists", view, offset],
+    queryFn: () => api.allShortlists({ ...view, limit: LIMIT, offset }),
+    placeholderData: (previous) => previous,
   });
   const saveNotes = useMutation({
     mutationFn: ({ entryId, text }: { entryId: string; text: string }) => api.setNotes(entryId, text),
@@ -170,6 +176,7 @@ export default function ShortlistsPage() {
             </table>
           </div>
         )}
+        {entries.data && <Pagination total={entries.data.total} limit={LIMIT} offset={offset} onChange={setOffset} />}
         </>}
       </div>
 
