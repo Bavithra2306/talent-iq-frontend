@@ -248,7 +248,7 @@ const SITE_LABEL: Record<string, string> = {
 
 /** Where a resume came from: "Uploaded" by a person, or the public site it was sourced from. */
 function SourceBadge({ site }: { site: string | null }) {
-  if (!site) return <span className="badge plain source-pill"><Upload /> Uploaded</span>;
+  if (!site) return <span className="badge plain source-pill">Uploaded</span>;
   return <span className="badge blue plain source-pill"><Globe /> {SITE_LABEL[site] ?? labelize(site)}</span>;
 }
 
