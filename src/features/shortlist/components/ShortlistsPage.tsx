@@ -1,17 +1,23 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { FileText, ListChecks } from "lucide-react";
-import { Alert, Empty, Loading, PageHeader, ScoreBar, StatusBadge } from "../../../components/ui";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, FileText, ListChecks } from "lucide-react";
+import { Alert, Drawer, Empty, Loading, PageHeader, ScoreBar, StatusBadge, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatYears, STATUS_LABEL } from "../../../utils/format";
+import type { ShortlistEntry } from "../../../types/api";
+import EntryDetail from "./EntryDetail";
 import JobSummary from "./JobSummary";
 
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
   const navigate = useNavigate();
-  const [view, setView] = useState({ job_id: "", status: "shortlisted", location: "", min_score: "", max_score: "", sort: "score", order: "desc" });
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [listOpen, setListOpen] = useState(false); // the scored list is folded until you open it
+  const [openEntry, setOpenEntry] = useState<ShortlistEntry | null>(null);
+  const [view, setView] = useState({ job_id: "", status: "", location: "", min_score: "", max_score: "", sort: "score", order: "desc" });
   // How many candidates have each status (for the chosen job, or all jobs).
   const counts = useQuery({
     queryKey: ["all-shortlists", "status-counts", view.job_id, view.location, view.min_score, view.max_score],
@@ -24,6 +30,15 @@ export default function ShortlistsPage() {
   const entries = useQuery({
     queryKey: ["all-shortlists", view],
     queryFn: () => api.allShortlists({ ...view, limit: 100 }),
+  });
+  const saveNotes = useMutation({
+    mutationFn: ({ entryId, text }: { entryId: string; text: string }) => api.setNotes(entryId, text),
+    onSuccess: (entry) => {
+      setOpenEntry((current) => (current ? entry : current));
+      void queryClient.invalidateQueries({ queryKey: ["all-shortlists"] });
+      toast("Note saved.", "success");
+    },
+    onError: (err) => toast(errorMessage(err), "error"),
   });
   const [selectedId, setSelectedId] = useState("");
   const [jobSearch, setJobSearch] = useState("");
@@ -63,8 +78,14 @@ export default function ShortlistsPage() {
       </div>
 
       <div className="card">
-        <div className="card-header"><div><h2>All scored candidates</h2><p>Across every job.</p></div></div>
-        <div className="toolbar">
+        <button type="button" className="list-count list-toggle" aria-expanded={listOpen} onClick={() => setListOpen(!listOpen)}>
+          All scored candidates
+          {entries.data && <span className="badge brand plain">{entries.data.total}</span>}
+          <span className="muted small" style={{ fontWeight: 400 }}>across every job</span>
+          <ChevronDown size={18} className={`list-chevron ${listOpen ? "open" : ""}`} />
+        </button>
+        {listOpen && <>
+        <div className="toolbar slim">
           <select className="select" value={view.job_id} onChange={(e) => setView({ ...view, job_id: e.target.value })}>
             <option value="">All jobs</option>
             {jobs.data?.items.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
@@ -94,7 +115,7 @@ export default function ShortlistsPage() {
               <thead><tr><th>Candidate</th><th>Job</th><th>Rank</th><th>Score</th><th>Status</th><th>Resume</th></tr></thead>
               <tbody>
                 {entries.data.items.map((e) => (
-                  <tr key={e.id} className="clickable" onClick={() => navigate(`/jobs/${e.job_id}/shortlist`)}>
+                  <tr key={e.id} className="clickable" onClick={() => setOpenEntry(e)}>
                     <td><div className="cell-title">{e.name ?? "Name not given"}</div><div className="cell-sub">{[e.current_title, formatYears(e.total_years_experience)].filter((x) => x && x !== "—").join(" · ")}</div></td>
                     <td>{jobTitle(e.job_id)}</td>
                     <td>{e.rank ?? "—"}</td>
@@ -109,7 +130,17 @@ export default function ShortlistsPage() {
             </table>
           </div>
         )}
+        </>}
       </div>
+
+      {openEntry && (
+        <Drawer title="Candidate details" onClose={() => setOpenEntry(null)} half
+                footer={<button className="btn" onClick={() => navigate(`/jobs/${openEntry.job_id}/shortlist`)}>Open this job's shortlist</button>}>
+          <p className="muted small" style={{ marginBottom: 10 }}>For the job: <strong>{jobTitle(openEntry.job_id)}</strong></p>
+          <EntryDetail key={openEntry.id} entry={openEntry} onOpenResume={() => openFile(`/api/v1/candidates/${openEntry.candidate_id}/resume`, openEntry.name ?? "Resume")}
+                       onSaveNotes={(text) => saveNotes.mutate({ entryId: openEntry.id, text })} savingNotes={saveNotes.isPending} />
+        </Drawer>
+      )}
     </>
   );
 }
