@@ -847,3 +847,10 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 
 .sidebar-brand, .sidebar-brand:hover, .sidebar-brand:focus { text-decoration: none; }
 .sidebar-brand .brand-name { text-decoration: none; }
+
+/* slim upload bar (resumes) */
+.dropzone.compact { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 12px; padding: 8px 14px; text-align: left; }
+.dropzone.compact svg { width: 20px; height: 20px; margin: 0; flex: none; }
+.dropzone.compact strong { display: inline; margin: 0; font-size: 13.5px; }
+.dropzone.compact .muted { margin: 0 !important; font-size: 12px; }
+.dropzone.compact:hover svg { transform: none; }
