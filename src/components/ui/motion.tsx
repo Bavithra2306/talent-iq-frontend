@@ -54,7 +54,7 @@ export function useMounted() {
 }
 
 export interface Slice { label: string; value: number; color?: string }
-export const PALETTE = ["#1D4ED8", "#0EA5E9", "#38BDF8", "#1E3A8A", "#93C5FD", "#64748B", "#16A34A", "#F59E0B"];
+export const PALETTE = ["var(--brand-600)", "var(--brand-500)", "#38BDF8", "#1E3A8A", "#93C5FD", "#64748B", "#16A34A", "#F59E0B"];
 
 /** Donut with a hover read-out in the middle. */
 export function DonutChart({ data, size = 190, centerLabel = "total" }: { data: Slice[]; size?: number; centerLabel?: string }) {
