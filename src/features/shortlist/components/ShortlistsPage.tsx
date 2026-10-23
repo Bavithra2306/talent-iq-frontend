@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, FileText, ListChecks } from "lucide-react";
+import { ChevronDown, FileText, ListChecks, Search } from "lucide-react";
 import { Alert, Drawer, Empty, Loading, PageHeader, ScoreBar, StatusBadge, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
@@ -55,6 +55,13 @@ export default function ShortlistsPage() {
   }, [cityRows.data]);
   const [selectedId, setSelectedId] = useState("");
   const [jobSearch, setJobSearch] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerBox = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = (e: MouseEvent) => pickerBox.current && !pickerBox.current.contains(e.target as Node) && setPickerOpen(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
   const selectedJob = jobs.data?.items.find((j) => j.id === selectedId);
   const visibleJobs = useMemo(
     () => (jobs.data?.items ?? []).filter((j) => !jobSearch.trim() || `${j.title} ${j.category ?? ""}`.toLowerCase().includes(jobSearch.trim().toLowerCase())),
@@ -68,26 +75,43 @@ export default function ShortlistsPage() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-header">
-          <div><h2>Job descriptions</h2><p>Click a job to see what it asks for.</p></div>
-          {(jobs.data?.items.length ?? 0) > 6 && (
-            <input className="input" style={{ maxWidth: 220 }} placeholder="Search jobs" value={jobSearch} onChange={(e) => setJobSearch(e.target.value)} />
-          )}
+          <div><h2>Start matching</h2><p>Choose a job description, check its details, then press Start matching.</p></div>
         </div>
-        {jobs.isLoading && <Loading rows={2} />}
-        {jobs.data?.items.length === 0 && <Empty title="No open jobs">Create a job first.</Empty>}
-        {jobs.data && jobs.data.items.length > 0 && (
-          <div className="jd-list">
-            {visibleJobs.map((j) => (
-              <button key={j.id} className={`jd-card ${selectedJob?.id === j.id ? "on" : ""}`} onClick={() => setSelectedId(selectedJob?.id === j.id ? "" : j.id)}
-                      aria-pressed={selectedJob?.id === j.id}>
-                <strong>{j.title}</strong>
-                <span className="muted small">{[j.category, j.experience_years != null ? `${j.experience_years}+ yrs` : null].filter(Boolean).join(" · ") || "—"}</span>
+        <div className="card-body stack" style={{ gap: 14 }}>
+          {jobs.isLoading && <Loading rows={1} />}
+          {jobs.data?.items.length === 0 && <Empty title="No open jobs">Create a job first.</Empty>}
+          {jobs.data && jobs.data.items.length > 0 && (
+            <div className="jd-picker" ref={pickerBox}>
+              <button type="button" className={`jd-picker-button ${pickerOpen ? "open" : ""}`} aria-haspopup="listbox" aria-expanded={pickerOpen}
+                      onClick={() => setPickerOpen(!pickerOpen)}>
+                {selectedJob
+                  ? <span className="jd-picker-value"><strong>{selectedJob.title}</strong><span className="muted small">{[selectedJob.category, selectedJob.experience_years != null ? `${selectedJob.experience_years}+ yrs` : null].filter(Boolean).join(" · ")}</span></span>
+                  : <span className="muted">Choose a job description…</span>}
+                <ChevronDown size={18} className={`list-chevron ${pickerOpen ? "open" : ""}`} />
               </button>
-            ))}
-            {visibleJobs.length === 0 && <span className="muted small" style={{ padding: 8 }}>No job matches “{jobSearch}”.</span>}
-          </div>
-        )}
-        {selectedJob && <div className="card-body jd-detail-wrap" key={selectedJob.id}><JobSummary job={selectedJob} /></div>}
+              {pickerOpen && (
+                <div className="jd-picker-menu" role="listbox">
+                  <div className="jd-picker-search">
+                    <Search size={15} />
+                    <input autoFocus className="input" placeholder={`Search ${jobs.data.items.length} job description${jobs.data.items.length === 1 ? "" : "s"}`}
+                           value={jobSearch} onChange={(e) => setJobSearch(e.target.value)} />
+                  </div>
+                  <div className="jd-picker-list">
+                    {visibleJobs.map((j) => (
+                      <button key={j.id} type="button" role="option" aria-selected={selectedJob?.id === j.id} className={`jd-picker-item ${selectedJob?.id === j.id ? "on" : ""}`}
+                              onClick={() => { setSelectedId(j.id); setPickerOpen(false); setJobSearch(""); }}>
+                        <strong>{j.title}</strong>
+                        <span className="muted small">{[j.category, j.experience_years != null ? `${j.experience_years}+ yrs` : null].filter(Boolean).join(" · ") || "—"}</span>
+                      </button>
+                    ))}
+                    {visibleJobs.length === 0 && <span className="muted small" style={{ padding: 10 }}>No job matches “{jobSearch}”.</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {selectedJob && <div className="jd-detail-wrap" key={selectedJob.id}><JobSummary job={selectedJob} /></div>}
+        </div>
       </div>
 
       <div className="card">

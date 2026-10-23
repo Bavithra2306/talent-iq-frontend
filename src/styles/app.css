@@ -986,3 +986,21 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .activity-col b { font-size: 11px; font-weight: 600; color: var(--ink-700); min-height: 14px; }
 @keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .activity-bar { animation: none; } }
+
+/* job description picker (Shortlists) */
+.jd-picker { position: relative; max-width: 520px; }
+.jd-picker-button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 14px; min-height: 48px; text-align: left; font: inherit; cursor: pointer;
+  background: var(--surface); border: 1.5px solid var(--ink-300); border-radius: 12px; transition: border-color .15s, box-shadow .15s; }
+.jd-picker-button:hover, .jd-picker-button.open { border-color: var(--brand-500); }
+.jd-picker-button.open { box-shadow: 0 0 0 3px var(--brand-100); }
+.jd-picker-value { display: grid; min-width: 0; }
+.jd-picker-value strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jd-picker-menu { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px); background: var(--surface); border: 1px solid var(--ink-200); border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden; animation: pop .12s ease-out both; }
+.jd-picker-search { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--ink-200); color: var(--ink-400); }
+.jd-picker-search .input { border: 0; box-shadow: none; padding: 6px 4px; height: 30px; }
+.jd-picker-list { max-height: 280px; overflow-y: auto; padding: 6px; display: grid; gap: 2px; }
+.jd-picker-item { display: grid; text-align: left; padding: 8px 10px; border: 0; border-radius: 8px; background: none; cursor: pointer; font: inherit; }
+.jd-picker-item:hover { background: var(--ink-50); }
+.jd-picker-item.on { background: var(--brand-50); }
+.jd-picker-item strong { font-size: 13.5px; }
+.jd-detail-wrap { border-top: 0; }
