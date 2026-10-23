@@ -422,7 +422,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* file viewer */
 .viewer-overlay { background: rgb(15 23 42 / 62%); backdrop-filter: blur(2px); z-index: 70; }
-.viewer { margin: auto; width: min(1080px, calc(100vw - 32px)); height: calc(100vh - 40px); background: var(--surface); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg); animation: pop .18s ease-out both; }
+.viewer { margin: auto; width: min(720px, calc(100vw - 32px)); height: min(82vh, 780px); background: var(--surface); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg); animation: pop .18s ease-out both; }
 .viewer-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--ink-200); background: var(--ink-50); }
 .viewer-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .viewer-body { flex: 1; min-height: 0; background: #E2E8F0; display: grid; }

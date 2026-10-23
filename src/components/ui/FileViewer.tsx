@@ -37,7 +37,7 @@ function FileBody({ src, blob, error, title }: { src: string | null; blob: Blob 
   if (!src) return <div className="viewer-state"><Skeleton h={14} w="60%" /><Skeleton h={14} w="80%" /><Skeleton h={14} w="70%" /><Skeleton h={320} /></div>;
   return (blob?.type ?? "").startsWith("image/")
     ? <img className="viewer-image" src={src} alt={title} />
-    : <iframe className="viewer-frame" src={src} title={title} />;
+    : <iframe className="viewer-frame" src={(blob?.type ?? "").includes("pdf") ? `${src}#toolbar=0&navpanes=0&view=FitH` : src} title={title} />;
 }
 
 /** A resume or JD shown inline in the page (used in tabs inside panels). */
