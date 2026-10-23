@@ -29,7 +29,15 @@ export default function JobsPage() {
   // The category and location lists hold only values that exist in your jobs.
   const all = useQuery({ queryKey: ["jobs", "choices"], queryFn: () => api.listJobs({ limit: 100 }) });
   const categories = useMemo(() => [...new Set((all.data?.items ?? []).map((j) => j.category).filter(Boolean) as string[])].sort(), [all.data]);
-  const locations = useMemo(() => [...new Set((all.data?.items ?? []).map((j) => j.location).filter(Boolean) as string[])].sort(), [all.data]);
+  // One entry per city: "Chennai" and "Chennai, India" are the same place.
+  const locations = useMemo(() => {
+    const byCity = new Map<string, string>();
+    for (const j of all.data?.items ?? []) {
+      const city = j.location?.split(",")[0].trim();
+      if (city && !byCity.has(city.toLowerCase())) byCity.set(city.toLowerCase(), city);
+    }
+    return [...byCity.values()].sort();
+  }, [all.data]);
   const filtered = Boolean(search || status || category || location || experience);
   const pick = (set: (v: string) => void) => (e: { target: { value: string } }) => { set(e.target.value); setOffset(0); };
   const clear = () => { setSearch(""); setStatus(""); setCategory(""); setLocation(""); setExperience(""); setOffset(0); };
