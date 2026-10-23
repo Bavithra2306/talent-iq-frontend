@@ -1094,3 +1094,6 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .segmented button.active .tab-count { background: var(--brand-100); color: var(--brand-700); }
 .review-progress-line { margin-left: auto; }
 .review-actions { justify-content: flex-end; gap: 6px; flex-wrap: nowrap; }
+
+/* fields in one row keep their boxes level, even when a neighbour has a hint line */
+.form-grid .field { align-content: start; }
