@@ -973,3 +973,21 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .greet-hills .h1 { fill: rgb(15 23 42 / 22%); } .greet-hills .h2 { fill: rgb(15 23 42 / 38%); }
 .appearance { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 @media (prefers-reduced-motion: reduce) { .greet-sun, .greet-cloud, .greet-star { animation: none; } }
+
+/* talent map */
+.profile-layout:not(.with-map) { grid-template-columns: minmax(0, 460px); }
+.talent-map { position: sticky; top: 24px; padding: 18px 20px; display: grid; gap: 12px; }
+.talent-map-head { display: grid; gap: 2px; }
+.talent-map-head h2 { font-size: 16px; }
+.talent-map-body { display: grid; grid-template-columns: minmax(0, 300px) minmax(150px, 1fr); gap: 20px; align-items: center; }
+.talent-map svg { width: 100%; height: auto; max-height: 480px; }
+.map-dot { fill: var(--ink-300); }
+.map-core { fill: var(--brand-600); }
+.map-ping { fill: var(--brand-500); opacity: .35; transform-box: fill-box; transform-origin: center; animation: map-ping 2.6s ease-out infinite; }
+@keyframes map-ping { from { transform: scale(.7); opacity: .55; } to { transform: scale(2.1); opacity: 0; } }
+.map-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.map-legend li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; font-size: 13.5px; }
+.map-swatch { width: 9px; height: 9px; border-radius: 50%; background: var(--brand-600); }
+.map-swatch.off { background: var(--ink-300); }
+@media (max-width: 1100px) { .profile-layout.with-map { grid-template-columns: minmax(0, 460px); } .talent-map { display: none; } }
+@media (prefers-reduced-motion: reduce) { .map-ping { animation: none; } }
