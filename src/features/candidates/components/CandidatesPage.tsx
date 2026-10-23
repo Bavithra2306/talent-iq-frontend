@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
+import { FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
 import { Alert, Drawer, Empty, FileDrop, InlineFile, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
 import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
@@ -253,7 +253,7 @@ function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <Drawer title={c?.name ?? "Candidate"} onClose={onClose} wide
             footer={<>
-              <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}><Download /> Download</button>
+              <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}>Download</button>
             </>}>
       {detail.isLoading && <Loading />}
       {detail.isError && <Alert tone="error">{errorMessage(detail.error)}</Alert>}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, FileText, X } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import { apiClient } from "../../lib/axios";
 import { errorMessage } from "../../lib/axios";
 import { Skeleton } from "./motion";
@@ -82,7 +82,7 @@ export function FileViewerHost() {
         <div className="viewer-bar">
           <span className="viewer-title"><FileText size={16} /> {title}</span>
           <span className="row">
-            <button className="btn btn-sm" onClick={download} disabled={!src}><Download /> Download</button>
+            <button className="btn btn-sm" onClick={download} disabled={!src}>Download</button>
             <button className="btn btn-ghost btn-icon" onClick={() => setRequest(null)} aria-label="Close"><X /></button>
           </span>
         </div>

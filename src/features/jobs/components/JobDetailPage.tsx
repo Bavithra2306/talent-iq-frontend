@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, ListChecks, Pencil, Trash2 } from "lucide-react";
+import { ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useSession } from "../../../app/session";
 import { Alert, Loading, PageHeader, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
@@ -52,7 +52,7 @@ export default function JobDetailPage() {
         subtitle={[j.category, j.location, j.work_mode].filter(Boolean).join(" · ") || undefined}
         actions={
           <>
-            <button className="btn" onClick={() => void openFile(`/api/v1/jobs/${id}/view`)}><Download /> View job description</button>
+            <button className="btn" onClick={() => void openFile(`/api/v1/jobs/${id}/view`)}>View job description</button>
             {!editing && <button className="btn" onClick={() => setEditing(true)}><Pencil /> Edit</button>}
             {!editing && (
               <button className="btn btn-danger" disabled={remove.isPending}
