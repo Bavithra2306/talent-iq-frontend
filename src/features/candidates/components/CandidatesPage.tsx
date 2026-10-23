@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
-import { Alert, Drawer, Empty, FileDrop, InlineFile, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
+import { Alert, Drawer, Empty, FileDrop, Modal, InlineFile, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
 import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
 import { errorMessage } from "../../../lib/axios";
@@ -28,6 +28,7 @@ export default function ResumesPage() {
   const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", min_experience: "", max_experience: "", status: "", sort: "date_added", order: "desc" });
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false); // the upload dialog
   const [listOpen, setListOpen] = useState(false); // the resume list is folded until you open it or search
 
   const categories = useQuery({ queryKey: ["categories"], queryFn: api.categories });
@@ -53,6 +54,7 @@ export default function ResumesPage() {
     mutationFn: () => api.uploadResumes(files, setProgress),
     onSuccess: (res) => {
       setFiles([]);
+      setUploadOpen(false);
       setRejected(res.rejected);
       if (res.batch_id) {
         setBatchId(res.batch_id);
@@ -71,6 +73,7 @@ export default function ResumesPage() {
   const tooBig = totalBytes > MAX_UPLOAD_MB * 1024 * 1024;
 
   const totalResumes = categories.data?.reduce((sum, c) => sum + c.count, 0);
+  const closeUpload = () => { setUploadOpen(false); setFiles([]); upload.reset(); };
   const clearBatch = () => { setBatchId(null); try { localStorage.removeItem(BATCH_KEY); } catch { /* ignore */ } };
 
   return (
@@ -85,37 +88,11 @@ export default function ResumesPage() {
             </span>
           )}</>}
         subtitle="Upload resumes and browse everyone you have."
+        actions={<button className="btn btn-primary" onClick={() => setUploadOpen(true)}><Upload /> Upload resumes</button>}
       />
 
       <div style={{ marginBottom: 12 }}>
         <div className="stack upload-card" style={{ gap: 8 }}>
-          <FileDrop compact multiple folders onFiles={addFiles} hint="PDF, Word or scanned PDF. Up to 150 files, or one zip." />
-          {files.length > 0 && (
-            <div className="picked-box">
-              <div className="chip-files">
-                {files.slice(0, 12).map((f) => (
-                  <span key={f.name + f.size} className="file-chip" title={f.name}>
-                    <FileText size={14} /><span className="file-chip-name">{f.name}</span><span className="muted small">{formatBytes(f.size)}</span>
-                    <button className="file-chip-x" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={`Remove ${f.name}`} disabled={upload.isPending}><X size={12} /></button>
-                  </span>
-                ))}
-                {files.length > 12 && <span className="file-chip more">+{files.length - 12} more</span>}
-              </div>
-              <div className="spread">
-                <span className="muted small"><strong>{files.length}</strong> file(s) · {formatBytes(totalBytes)}</span>
-                <div className="row">
-                  <button className="btn btn-ghost btn-sm" onClick={() => setFiles([])} disabled={upload.isPending}>Clear</button>
-                  <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
-                    <Upload /> {upload.isPending ? `Uploading ${progress}%` : `Upload ${files.length} file${files.length === 1 ? "" : "s"}`}
-                  </button>
-                </div>
-              </div>
-              {upload.isPending && <div className="upload-bar"><span style={{ width: `${progress}%` }} /></div>}
-            </div>
-          )}
-          {tooMany && <Alert tone="warn">You chose {files.length} files. Please upload at most {MAX_RESUME_FILES} at a time.</Alert>}
-          {tooBig && <Alert tone="warn">These files add up to {formatBytes(totalBytes)}. Please upload at most {MAX_UPLOAD_MB} MB at a time.</Alert>}
-          {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
           {rejected.length > 0 && (
             <Alert>
               <strong>{rejected.length} file(s) not added</strong>
@@ -218,6 +195,40 @@ export default function ResumesPage() {
         {list.data && <Pagination total={list.data.total} limit={LIMIT} offset={offset} onChange={setOffset} />}
         </>}
       </div>
+
+      {uploadOpen && (
+        <Modal title="Upload resumes" onClose={() => !upload.isPending && closeUpload()}
+               footer={files.length > 0 ? (
+                 <>
+                   <button className="btn btn-ghost" onClick={() => setFiles([])} disabled={upload.isPending}>Clear</button>
+                   <button className="btn btn-primary" disabled={upload.isPending || tooMany || tooBig} onClick={() => upload.mutate()}>
+                     <Upload /> {upload.isPending ? `Uploading ${progress}%` : `Upload ${files.length} file${files.length === 1 ? "" : "s"}`}
+                   </button>
+                 </>
+               ) : undefined}>
+          <div className="stack" style={{ gap: 12 }}>
+            <FileDrop multiple folders onFiles={addFiles} hint="PDF, Word or scanned PDF. Drag files, a folder, or one zip. Up to 150 files." />
+            {files.length > 0 && (
+              <div className="picked-box">
+                <div className="chip-files">
+                  {files.slice(0, 12).map((f) => (
+                    <span key={f.name + f.size} className="file-chip" title={f.name}>
+                      <FileText size={14} /><span className="file-chip-name">{f.name}</span><span className="muted small">{formatBytes(f.size)}</span>
+                      <button className="file-chip-x" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={`Remove ${f.name}`} disabled={upload.isPending}><X size={12} /></button>
+                    </span>
+                  ))}
+                  {files.length > 12 && <span className="file-chip more">+{files.length - 12} more</span>}
+                </div>
+                <span className="muted small"><strong>{files.length}</strong> file(s) · {formatBytes(totalBytes)}</span>
+                {upload.isPending && <div className="upload-bar"><span style={{ width: `${progress}%` }} /></div>}
+              </div>
+            )}
+            {tooMany && <Alert tone="warn">You chose {files.length} files. Please upload at most {MAX_RESUME_FILES} at a time.</Alert>}
+            {tooBig && <Alert tone="warn">These files add up to {formatBytes(totalBytes)}. Please upload at most {MAX_UPLOAD_MB} MB at a time.</Alert>}
+            {upload.isError && <Alert tone="error">{errorMessage(upload.error)}</Alert>}
+          </div>
+        </Modal>
+      )}
 
       {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} />}
     </>
