@@ -844,3 +844,6 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .profile-compact .field { gap: 4px; }
 .profile-compact .input { padding: 7px 10px; font-size: 13.5px; }
 .lock-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-500); }
+
+.sidebar-brand, .sidebar-brand:hover, .sidebar-brand:focus { text-decoration: none; }
+.sidebar-brand .brand-name { text-decoration: none; }
