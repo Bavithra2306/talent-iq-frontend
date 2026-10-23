@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
+import { FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
 import { Alert, Drawer, Empty, FileDrop, Modal, InlineFile, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
 import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
@@ -29,7 +29,6 @@ export default function ResumesPage() {
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false); // the upload dialog
-  const [listOpen, setListOpen] = useState(false); // the resume list is folded until you open it or search
 
   const categories = useQuery({ queryKey: ["categories"], queryFn: api.categories });
   // How many resumes are ready for matching (have their search fingerprints); refreshes every minute.
@@ -129,13 +128,10 @@ export default function ResumesPage() {
 
       <div className="card">
         {list.data && (
-          <button type="button" className="list-count list-toggle" aria-expanded={listOpen} onClick={() => setListOpen(!listOpen)}>
+          <div className="list-count">
             {filters.status === "new" ? "New (not matched yet)" : filters.status ? STATUS_LABEL[filters.status as keyof typeof STATUS_LABEL] : "All resumes"}
-            {filters.category && ` · ${filters.category}`} <span className="badge brand plain">{list.data.total}</span>
-            <ChevronDown size={18} className={`list-chevron ${listOpen ? "open" : ""}`} />
-          </button>
+            {filters.category && ` · ${filters.category}`} <span className="badge brand plain">{list.data.total}</span></div>
         )}
-        {listOpen && <>
         <div className="toolbar slim">
           <select className="select" value={filters.category} onChange={(e) => setFilter("category", e.target.value)} aria-label="Category">
             <option value="">All categories ({totalResumes ?? 0})</option>
@@ -193,7 +189,6 @@ export default function ResumesPage() {
           </div>
         )}
         {list.data && <Pagination total={list.data.total} limit={LIMIT} offset={offset} onChange={setOffset} />}
-        </>}
       </div>
 
       {uploadOpen && (
