@@ -63,6 +63,7 @@ export const api = {
   batchStatus: async (id: string) => (await apiClient.get<BatchStatus>(`${v1}/resumes/batches/${id}`)).data,
   listCandidates: async (params: Params) =>
     (await apiClient.get<Paged<Candidate>>(`${v1}/candidates`, { params: clean(params) })).data,
+  batchCandidates: async (batchId: string) => (await apiClient.get<CandidateDetail[]>(`${v1}/resumes/batches/${batchId}/candidates`)).data,
   categories: async () => (await apiClient.get<{ category: string | null; count: number }[]>(`${v1}/candidates/categories`)).data,
   getCandidate: async (id: string) => (await apiClient.get<CandidateDetail>(`${v1}/candidates/${id}`)).data,
   embeddingQuota: async () => (await apiClient.get<EmbeddingQuota>(`${v1}/system/embedding-quota`)).data,

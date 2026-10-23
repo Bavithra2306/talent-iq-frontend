@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Check, Code2, Database, Globe, Link2, Play, Sparkles } from "lucide-react";
+import { BookOpen, Check, Code2, Database, Eye, Globe, Link2, Play, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 import { Alert, AnimatedNumber, Skeleton, PageHeader } from "../../../components/ui";
 import { api } from "../../../services/api";
@@ -8,6 +8,7 @@ import { errorMessage } from "../../../lib/axios";
 import type { SourceInfo } from "../../../types/api";
 import BatchProgress from "../../candidates/components/BatchProgress";
 import ReviewQueue from "../../candidates/components/ReviewQueue";
+import SourcedResumes from "./SourcedResumes";
 import { CATEGORIES } from "../../jobs/components/JobForm";
 
 type SourceType = SourceInfo["type"];
@@ -39,13 +40,15 @@ export default function SourcingPage() {
   const [selected, setSelected] = useState<Set<SourceType>>(new Set(["huggingface"]));
   const [opts, setOpts] = useState<Options>(DEFAULTS);
   const [batchId, setBatchId] = useState<string | null>(null);
+  const [finished, setFinished] = useState(false); // the run is done, so its resumes can be listed
+  const [viewing, setViewing] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [details, setDetails] = useState<SourceType | null>(null);
   const hasKeyword = keyword.trim().length >= 2;
 
   const run = useMutation({
     mutationFn: () => api.startSourcing(buildRequest(selected, opts), hasKeyword ? keyword.trim() : undefined),
-    onSuccess: (r) => setBatchId(r.batch_id),
+    onSuccess: (r) => { setBatchId(r.batch_id); setFinished(false); setViewing(false); },
   });
 
   const toggle = (t: SourceType) => setSelected((s) => {
@@ -150,12 +153,20 @@ export default function SourcingPage() {
           <div className="card-body">
             <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.batchStatus}
                            onFinished={() => {
+                             setFinished(true);
                              void queryClient.invalidateQueries({ queryKey: ["candidates"] });
                              void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
                            }} />
+            {finished && (
+              <div className="row" style={{ justifyContent: "center", marginTop: 12 }}>
+                <button className="btn btn-primary" onClick={() => setViewing(true)}><Eye /> View resumes</button>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {viewing && batchId && <SourcedResumes batchId={batchId} onClose={() => setViewing(false)} />}
 
       <ReviewQueue origin="sourcing" />
     </>

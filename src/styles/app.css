@@ -1097,3 +1097,12 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 
 /* fields in one row keep their boxes level, even when a neighbour has a hint line */
 .form-grid .field { align-content: start; }
+
+/* resumes found by a sourcing run */
+.sourced-list { display: grid; gap: 8px; }
+.sourced-row { border: 1px solid var(--ink-200); border-radius: 12px; background: var(--surface); }
+.sourced-row.open { border-color: var(--brand-500); }
+.sourced-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.sourced-who { display: grid; flex: 1; min-width: 0; }
+.sourced-row.open .run-chevron { transform: rotate(90deg); }
+.sourced-body { display: grid; gap: 10px; padding: 4px 14px 14px 38px; }
