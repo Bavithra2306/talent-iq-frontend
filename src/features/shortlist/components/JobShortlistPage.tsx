@@ -63,6 +63,7 @@ export default function JobShortlistPage() {
   const [nlText, setNlText] = useState("");
   const [parsed, setParsed] = useState<ParsedFilter | null>(null);
   const [weights, setWeights] = useState<Weights | null>(null);
+  const [savedWeights, setSavedWeights] = useState<Weights | null>(null);
   const [preview, setPreview] = useState(false);
   const [openEntry, setOpenEntry] = useState<ShortlistEntry | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -83,7 +84,7 @@ export default function JobShortlistPage() {
     }),
   });
   useEffect(() => {
-    if (list.data && !weights) setWeights(list.data.weights);
+    if (list.data && !weights) { setWeights(list.data.weights); setSavedWeights(list.data.weights); }
   }, [list.data, weights]);
 
   const picked = useQuery({
@@ -116,7 +117,8 @@ export default function JobShortlistPage() {
   });
   const saveWeights = useMutation({
     mutationFn: (w: Weights) => api.saveWeights(id, w),
-    onSuccess: () => {
+    onSuccess: (_r, saved) => {
+      setSavedWeights(saved);
       setPreview(false);
       void queryClient.invalidateQueries({ queryKey: ["shortlist", id] });
       toast("Weights saved and results re-ranked.", "success");
@@ -137,6 +139,7 @@ export default function JobShortlistPage() {
   });
 
   const sum = weights ? total(weights) : 100;
+  const changed = Boolean(weights && savedWeights && (Object.keys(weights) as (keyof Weights)[]).some((k) => weights[k] !== savedWeights[k]));
   const toShare = useMemo(() => picked.data?.items.filter((e) => !e.shared_to).length ?? 0, [picked.data]);
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
   const s = runStatus.data;
@@ -198,7 +201,7 @@ export default function JobShortlistPage() {
               </span>
               <div className="row">
                 <button className="btn btn-sm" onClick={() => { setWeights({ skill_pct: 40, role_pct: 20, exp_pct: 25, edu_pct: 15 }); setPreview(true); }}>Reset</button>
-                <button className="btn btn-sm btn-primary" disabled={sum !== 100 || saveWeights.isPending} onClick={() => weights && saveWeights.mutate(weights)}>Save</button>
+                <button className="btn btn-sm btn-primary" disabled={sum !== 100 || !changed || saveWeights.isPending} onClick={() => weights && saveWeights.mutate(weights)}>Save</button>
               </div>
             </div>
             {sum !== 100 && <Alert tone="warn">The weights add up to {sum}%. Change them until the total is exactly 100%.</Alert>}
