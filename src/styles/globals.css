@@ -172,3 +172,20 @@
 @keyframes sheet-drift { from { transform: translateY(0) rotate(var(--tilt)); } to { transform: translateY(calc(-100vh - 320px)) rotate(calc(var(--tilt) * -1)); } }
 @keyframes sheet-tick { 0%, 30% { opacity: 0; scale: .4; } 36%, 60% { opacity: 1; scale: 1; } 66%, 100% { opacity: 0; scale: .4; } }
 @media (max-width: 700px) { .doc-field { opacity: .5; } }
+
+/* smaller sign-in form */
+.auth-card { width: min(340px, 100%); padding: 22px 24px 20px; border-radius: 18px; }
+.auth-card::before { border-radius: 18px 18px 0 0; }
+.auth-brandrow { gap: 9px; }
+.auth-brandrow svg { width: 36px; height: 36px; }
+.auth-wordmark { font-size: 21px; }
+.auth-wordmark b { color: var(--gold-500); }
+.auth-tagline { margin: 4px 0 12px; font-size: 12.5px; }
+.auth-panel { gap: 11px; }
+.auth-panel h1 { font-size: 21px; }
+.auth-panel p, .auth-panel .muted { font-size: 12.5px; }
+.auth-card .input { height: 34px; font-size: 13px; padding-top: 0; padding-bottom: 0; }
+.auth-card .btn { height: 36px; font-size: 13.5px; }
+.auth-card label { font-size: 12px; }
+.auth-center { gap: 12px; }
+.auth-points { font-size: 12px; }
