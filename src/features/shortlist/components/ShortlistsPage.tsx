@@ -40,6 +40,19 @@ export default function ShortlistsPage() {
     },
     onError: (err) => toast(errorMessage(err), "error"),
   });
+  // The location list holds the cities of everyone scored (for the chosen job).
+  const cityRows = useQuery({
+    queryKey: ["all-shortlists", "cities", view.job_id],
+    queryFn: () => api.allShortlists({ job_id: view.job_id, limit: 200, include_unranked: true }),
+  });
+  const cities = useMemo(() => {
+    const byCity = new Map<string, string>();
+    for (const e of cityRows.data?.items ?? []) {
+      const city = e.location?.split(",")[0].trim();
+      if (city && !byCity.has(city.toLowerCase())) byCity.set(city.toLowerCase(), city);
+    }
+    return [...byCity.values()].sort();
+  }, [cityRows.data]);
   const [selectedId, setSelectedId] = useState("");
   const [jobSearch, setJobSearch] = useState("");
   const selectedJob = jobs.data?.items.find((j) => j.id === selectedId);
@@ -96,9 +109,14 @@ export default function ShortlistsPage() {
               <option key={st} value={st}>{STATUS_LABEL[st]} ({counts.data?.[st] ?? "…"})</option>
             ))}
           </select>
-          <input className="input" placeholder="Location" value={view.location} onChange={(e) => setView({ ...view, location: e.target.value })} />
-          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Score from" value={view.min_score} onChange={(e) => setView({ ...view, min_score: e.target.value })} />
-          <input className="input" style={{ maxWidth: 120 }} type="number" min={0} max={100} placeholder="Score to" value={view.max_score} onChange={(e) => setView({ ...view, max_score: e.target.value })} />
+          <select className="select" value={view.location} onChange={(e) => setView({ ...view, location: e.target.value })} aria-label="Location">
+            <option value="">All locations</option>
+            {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="select" value={view.min_score} onChange={(e) => setView({ ...view, min_score: e.target.value })} aria-label="Minimum score">
+            <option value="">Any score</option>
+            {[50, 60, 70, 80, 90].map((n) => <option key={n} value={n}>Minimum {n}</option>)}
+          </select>
           <select className="select" value={`${view.sort}:${view.order}`} onChange={(e) => { const [s, o] = e.target.value.split(":"); setView({ ...view, sort: s, order: o }); }}>
             <option value="score:desc">Highest score</option>
             <option value="experience:desc">Most experience</option>
