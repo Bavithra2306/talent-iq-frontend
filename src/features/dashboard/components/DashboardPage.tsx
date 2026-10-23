@@ -155,7 +155,7 @@ function AdminHome() {
     team.data ? team.data.filter((m) => fn(m.role, m.status, Boolean(m.blocked))).length : undefined;
   const split: Slice[] = [
     { label: "Active", value: count((_, s, b) => s === "active" && !b) ?? 0, color: "#16A34A" },
-    { label: "Not signed in yet", value: count((_, s, b) => s === "pending" && !b) ?? 0, color: "#0EA5E9" },
+    { label: "Not signed in yet", value: count((_, s, b) => s === "pending" && !b) ?? 0, color: "#10B981" },
     { label: "Invite not accepted", value: count((_, s) => s === "invite_sent") ?? 0, color: "#F59E0B" },
     { label: "Blocked", value: count((_, __, b) => b) ?? 0, color: "#EF4444" },
   ].filter((s) => s.value > 0);

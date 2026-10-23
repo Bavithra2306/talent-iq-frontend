@@ -1,13 +1,13 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { CalendarDays, Check, Clock, Lock, Mail, MapPin, Moon, Phone, Save, ShieldCheck, Sun, User } from "lucide-react";
+import { CalendarDays, Clock, Lock, Mail, MapPin, Moon, Phone, Save, ShieldCheck, Sun, User } from "lucide-react";
 import { ROLE_LABEL, useSession } from "../../../app/session";
 import { Alert, PageHeader, useToast } from "../../../components/ui";
 import { updateProfile } from "../../auth/services/authService";
 import { errorMessage } from "../../../lib/axios";
 import { formatDateTime, initials } from "../../../utils/format";
 import RecentActivity from "./RecentActivity";
-import { ACCENTS, useAccent, useTheme } from "../../../app/theme";
+import { useTheme } from "../../../app/theme";
 
 const PHONE = /^[+0-9][0-9 ()-]{6,19}$/;
 
@@ -34,7 +34,6 @@ export default function ProfilePage() {
   const { user, setUser } = useSession();
   const toast = useToast();
   const [theme, setTheme] = useTheme();
-  const [accent, setAccent] = useAccent();
   const [touched, setTouched] = useState(false);
   const [form, setForm] = useState({ name: user.name ?? "", contact: user.contact ?? "", location: user.location ?? "" });
   const errors = validate(form);
@@ -79,17 +78,6 @@ export default function ProfilePage() {
             <div className="segmented" role="group" aria-label="Theme">
               <button className={theme === "light" ? "active" : ""} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><Sun /> Light</button>
               <button className={theme === "dark" ? "active" : ""} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><Moon /> Dark</button>
-            </div>
-          </div>
-          <div className="accent-row">
-            <span className="muted small">Colour</span>
-            <div className="swatches" role="radiogroup" aria-label="Theme colour">
-              {ACCENTS.map((a) => (
-                <button key={a.id} type="button" role="radio" aria-checked={accent === a.id} aria-label={a.name} title={a.name}
-                        className={`swatch ${accent === a.id ? "on" : ""}`} style={{ background: a.color }} onClick={() => setAccent(a.id)}>
-                  {accent === a.id && <Check size={13} strokeWidth={3} />}
-                </button>
-              ))}
             </div>
           </div>
         </div>

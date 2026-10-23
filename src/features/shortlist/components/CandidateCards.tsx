@@ -8,10 +8,10 @@ import { formatYears } from "../../../utils/format";
 import type { ShortlistEntry } from "../../../types/api";
 
 const PARTS = [
-  { key: "skills", label: "Skills", color: "#1D4ED8" },
-  { key: "role", label: "Role", color: "#0EA5E9" },
-  { key: "experience", label: "Experience", color: "#16A34A" },
-  { key: "education", label: "Education", color: "#F59E0B" },
+  { key: "skills", label: "Skills", color: "#047857" },
+  { key: "role", label: "Role", color: "#D4A017" },
+  { key: "experience", label: "Experience", color: "#34D399" },
+  { key: "education", label: "Education", color: "#92400E" },
 ] as const;
 
 /** Slides cards to their new place when the order changes (e.g. after moving a weight slider). */

@@ -14,7 +14,7 @@ import MatchPipeline from "./MatchPipeline";
 import { CandidateCards, CompareModal } from "./CandidateCards";
 
 const WEIGHT_LABELS: [keyof Weights, string, string][] = [
-  ["skill_pct", "Skills", "#1D4ED8"], ["role_pct", "Role", "#0EA5E9"], ["exp_pct", "Experience", "#16A34A"], ["edu_pct", "Education", "#F59E0B"],
+  ["skill_pct", "Skills", "#047857"], ["role_pct", "Role", "#D4A017"], ["exp_pct", "Experience", "#34D399"], ["edu_pct", "Education", "#92400E"],
 ];
 
 const total = (w: Weights) => w.skill_pct + w.role_pct + w.exp_pct + w.edu_pct;
