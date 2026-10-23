@@ -1033,3 +1033,10 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .funnel-track { height: 20px; border-radius: 6px; }
 
 .home-actions { justify-content: center; }
+
+/* minimized sidebar: the toggle stays beside the logo */
+.shell.collapsed { --sidebar-width: 100px; }
+.shell.collapsed .sidebar { padding: 20px 8px; }
+.shell.collapsed .sidebar-top { flex-direction: row; align-items: center; justify-content: center; gap: 6px; }
+.shell.collapsed .sidebar-top .sidebar-brand { flex: none; padding: 4px 0; }
+.shell.collapsed .sidebar-toggle { margin-top: 0; }
