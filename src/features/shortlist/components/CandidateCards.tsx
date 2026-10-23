@@ -86,7 +86,7 @@ export function CandidateCards({ items, onOpen, onToggle, toggling, compare, onC
     <div className="cand-grid" ref={container}>
       {items.map((e, i) => {
         const locked = Boolean(e.shared_to) || !["sourced", "shortlisted"].includes(e.status);
-        const reasons = (e.explanation?.reason ?? []).filter((r) => !r.endsWith("similar to the job description")).slice(0, 2);
+        const reasons = (e.explanation?.reason ?? []).filter((r) => !/(similar to|matching with) the job description$/.test(r)).slice(0, 2);
         const picked = compare.includes(e.id);
         return (
           <article key={e.id} data-flip={e.id} className={`cand-card status-${e.status} ${picked ? "is-compare" : ""}`}

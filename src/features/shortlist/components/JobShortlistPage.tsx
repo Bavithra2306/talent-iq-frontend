@@ -310,7 +310,7 @@ export default function JobShortlistPage() {
               <tbody>
                 {list.data.items.map((e, i) => {
                   const locked = Boolean(e.shared_to) || !["sourced", "shortlisted"].includes(e.status);
-                  const reasons = (e.explanation?.reason ?? []).filter((r) => !r.endsWith("similar to the job description"));
+                  const reasons = (e.explanation?.reason ?? []).filter((r) => !/(similar to|matching with) the job description$/.test(r));
                   return (
                     <tr key={e.id} className="clickable" onClick={() => setOpenEntry(e)}>
                       <td><strong>{e.rank ?? i + 1}</strong></td>

@@ -83,7 +83,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
       {e.reason?.length ? (
         <div>
           <h3 style={{ marginBottom: 8 }}>Why this score</h3>
-          <ul className="reasons" style={{ fontSize: 14 }}>{e.reason.map((r) => <li key={r}>{r}</li>)}</ul>
+          <ul className="reasons" style={{ fontSize: 14 }}>{e.reason.map((r) => <li key={r}>{r.replace(/similar to the job description$/, "matching with the job description")}</li>)}</ul>
         </div>
       ) : null}
 
