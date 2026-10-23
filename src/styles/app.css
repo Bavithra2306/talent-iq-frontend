@@ -1031,3 +1031,5 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .funnel { gap: 6px; }
 .funnel-row { grid-template-columns: 96px 1fr 40px; font-size: 12px; }
 .funnel-track { height: 20px; border-radius: 6px; }
+
+.home-actions { justify-content: center; }
