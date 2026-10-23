@@ -86,8 +86,8 @@ export default function ResumesPage() {
         subtitle="Upload resumes and browse everyone you have."
       />
 
-      <div className="card" style={{ marginBottom: 12 }}>
-        <div className="card-body stack upload-card" style={{ gap: 8 }}>
+      <div style={{ marginBottom: 12 }}>
+        <div className="stack upload-card" style={{ gap: 8 }}>
           <FileDrop compact multiple folders onFiles={addFiles} hint="PDF, Word or scanned PDF. Up to 150 files, or one zip." />
           {files.length > 0 && (
             <div className="picked-box">

@@ -856,8 +856,8 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .dropzone.compact:hover svg { transform: none; }
 
 /* slimmer resumes page: upload bar and one-line filters */
-.upload-card { padding: 10px 14px; }
-.card .dropzone.compact { padding: 8px 12px; border-width: 1.5px; min-height: 0; }
+.upload-card { padding: 0; }
+.dropzone.compact { padding: 8px 12px; border-width: 1.5px; min-height: 0; }
 .toolbar.slim { padding: 10px 14px; gap: 6px; }
 .toolbar.slim .input, .toolbar.slim .select { height: 32px; font-size: 13px; padding-top: 0; padding-bottom: 0; min-width: 0; }
 .toolbar.slim .select { flex: 0 1 auto; max-width: 170px; }
@@ -865,9 +865,12 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .toolbar.slim .grow { flex: 2 1 150px; min-width: 150px; }
 .list-count { padding: 6px 14px; }
 
-.card .dropzone.compact { padding: 10px 24px; width: 100%; box-sizing: border-box; flex-direction: row; line-height: 1.3; }
+.dropzone.compact { padding: 10px 24px; width: 100%; box-sizing: border-box; flex-direction: row; line-height: 1.3; }
 
 /* small upload box (about 3 inches wide) */
-.card .dropzone.compact { width: 300px; max-width: 100%; flex-wrap: nowrap; justify-content: flex-start; gap: 10px; padding: 8px 14px; text-align: left; }
+.dropzone.compact { width: 300px; max-width: 100%; flex-wrap: nowrap; justify-content: flex-start; gap: 10px; padding: 8px 14px; text-align: left; }
 .dropzone.compact .dz-text { display: grid; gap: 1px; min-width: 0; }
 .dropzone.compact .dz-hint { display: block; font-size: 11.5px; margin: 0; }
+
+/* upload box sits centred with no frame around it */
+.upload-card .dropzone.compact { margin: 0 auto; justify-content: center; }
