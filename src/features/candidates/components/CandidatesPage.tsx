@@ -86,8 +86,8 @@ export default function ResumesPage() {
         subtitle="Upload resumes and browse everyone you have."
       />
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-body stack" style={{ gap: 10 }}>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div className="card-body stack upload-card" style={{ gap: 8 }}>
           <FileDrop compact multiple folders onFiles={addFiles} hint="PDF, Word or scanned PDF. Up to 150 files, or one zip." />
           {files.length > 0 && (
             <div className="picked-box">
@@ -150,7 +150,7 @@ export default function ResumesPage() {
       <ReviewQueue origin="all" />
 
       <div className="card">
-        <div className="toolbar">
+        <div className="toolbar slim">
           <select className="select" value={filters.category} onChange={(e) => setFilter("category", e.target.value)} aria-label="Category">
             <option value="">All categories ({totalResumes ?? 0})</option>
             {categories.data?.filter((c) => c.category).map((c) => (
@@ -158,17 +158,17 @@ export default function ResumesPage() {
             ))}
           </select>
           <div className="row grow" style={{ position: "relative" }}>
-            <Search size={16} style={{ position: "absolute", left: 10, color: "var(--ink-400)" }} />
-            <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Name, email or title"
+            <Search size={15} style={{ position: "absolute", left: 9, color: "var(--ink-400)" }} />
+            <input className="input grow" style={{ paddingLeft: 30 }} placeholder="Name, email or title"
                    value={filters.search} onChange={(e) => setFilter("search", e.target.value)} />
           </div>
           <input className="input" placeholder="Skill" value={filters.skill} onChange={(e) => setFilter("skill", e.target.value)} />
           <input className="input" placeholder="Location" value={filters.location} onChange={(e) => setFilter("location", e.target.value)} />
-          <input className="input" style={{ minWidth: 110 }} type="number" min={0} placeholder="Min yrs"
+          <input className="input" type="number" min={0} placeholder="Min yrs"
                  value={filters.min_experience} onChange={(e) => setFilter("min_experience", e.target.value)} />
           <select className="select" value={filters.status} onChange={(e) => setFilter("status", e.target.value)}>
             <option value="">Any status</option>
-            <option value="new">New (not matched yet)</option>
+            <option value="new">New</option>
             {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
           </select>
           <select className="select" value={`${filters.sort}:${filters.order}`}

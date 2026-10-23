@@ -854,3 +854,17 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .dropzone.compact strong { display: inline; margin: 0; font-size: 13.5px; }
 .dropzone.compact .muted { margin: 0 !important; font-size: 12px; }
 .dropzone.compact:hover svg { transform: none; }
+
+/* slimmer resumes page: upload bar and one-line filters */
+.upload-card { padding: 10px 14px; }
+.card .dropzone.compact { padding: 8px 12px; border-width: 1.5px; min-height: 0; }
+.toolbar.slim { padding: 10px 14px; gap: 6px; }
+.toolbar.slim .input, .toolbar.slim .select { height: 32px; font-size: 13px; padding-top: 0; padding-bottom: 0; min-width: 0; }
+.toolbar.slim .select { flex: 0 1 auto; max-width: 170px; }
+.toolbar.slim > .input { flex: 1 1 90px; max-width: 130px; }
+.toolbar.slim .grow { flex: 2 1 150px; min-width: 150px; }
+.list-count { padding: 6px 14px; }
+
+.card .dropzone.compact { padding: 10px 24px; width: 100%; box-sizing: border-box; flex-direction: row; line-height: 1.3; }
+.card .dropzone.compact > div { display: none; }
+.card .dropzone.compact .muted { display: inline; }
