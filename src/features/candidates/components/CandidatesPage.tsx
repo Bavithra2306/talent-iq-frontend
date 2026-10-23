@@ -151,6 +151,14 @@ export default function ResumesPage() {
       <ReviewQueue origin="all" />
 
       <div className="card">
+        {list.data && (
+          <button type="button" className="list-count list-toggle" aria-expanded={listOpen} onClick={() => setListOpen(!listOpen)}>
+            {filters.status === "new" ? "New (not matched yet)" : filters.status ? STATUS_LABEL[filters.status as keyof typeof STATUS_LABEL] : "All resumes"}
+            {filters.category && ` · ${filters.category}`} <span className="badge brand plain">{list.data.total}</span>
+            <ChevronDown size={18} className={`list-chevron ${listOpen ? "open" : ""}`} />
+          </button>
+        )}
+        {listOpen && <>
         <div className="toolbar slim">
           <select className="select" value={filters.category} onChange={(e) => setFilter("category", e.target.value)} aria-label="Category">
             <option value="">All categories ({totalResumes ?? 0})</option>
@@ -182,14 +190,6 @@ export default function ResumesPage() {
             <option value="name:asc">Name A–Z</option>
           </select>
         </div>
-        {list.data && (
-          <button type="button" className="list-count list-toggle" aria-expanded={listOpen} onClick={() => setListOpen(!listOpen)}>
-            {filters.status === "new" ? "New (not matched yet)" : filters.status ? STATUS_LABEL[filters.status as keyof typeof STATUS_LABEL] : "All resumes"}
-            {filters.category && ` · ${filters.category}`} <span className="badge brand plain">{list.data.total}</span>
-            <ChevronDown size={18} className={`list-chevron ${listOpen ? "open" : ""}`} />
-          </button>
-        )}
-        {listOpen && <>
         {list.isLoading && <Loading />}
         {list.isError && <div className="card-body"><Alert tone="error">{errorMessage(list.error)}</Alert></div>}
         {list.data?.items.length === 0 && <Empty title="No resumes found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}

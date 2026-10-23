@@ -6,6 +6,7 @@ import { Alert, PageHeader, useToast } from "../../../components/ui";
 import { updateProfile } from "../../auth/services/authService";
 import { errorMessage } from "../../../lib/axios";
 import { formatDateTime, initials } from "../../../utils/format";
+import { LogoMark } from "../../../components/Logo";
 
 const PHONE = /^[+0-9][0-9 ()-]{6,19}$/;
 
@@ -22,6 +23,31 @@ function Row({ icon, label, value }: { icon: ReactNode; label: string; value: Re
     <div className="profile-row">
       <span className="profile-row-icon">{icon}</span>
       <span><span className="muted small">{label}</span><strong>{value}</strong></span>
+    </div>
+  );
+}
+
+const ORBITS = [
+  { size: 46, dots: 3, seconds: 38, color: "#38BDF8" },
+  { size: 72, dots: 4, seconds: 56, color: "#818CF8" },
+  { size: 98, dots: 5, seconds: 80, color: "#34D399" },
+];
+
+/** A calm decorative panel: people (dots) circling the TalentIQ spark, drawn together by soft pulses. */
+function ProfileArt() {
+  return (
+    <div className="profile-art" aria-hidden="true">
+      <div className="orbit-stage">
+        {ORBITS.map((o, i) => (
+          <div key={i} className="orbit" style={{ width: `${o.size}%`, height: `${o.size}%`, animationDuration: `${o.seconds}s`, animationDirection: i % 2 ? "reverse" : "normal" }}>
+            {Array.from({ length: o.dots }, (_, n) => (
+              <i key={n} className="orbit-dot" style={{ ["--a" as string]: `${(360 / o.dots) * n}deg`, background: o.color }} />
+            ))}
+          </div>
+        ))}
+        <span className="orbit-pulse" /><span className="orbit-pulse delay" />
+        <div className="orbit-core"><LogoMark size={64} animated /></div>
+      </div>
     </div>
   );
 }
@@ -53,6 +79,7 @@ export default function ProfilePage() {
   return (
     <>
       <PageHeader title="My profile" subtitle="Your email and role are managed by your admin." />
+      <div className="profile-layout">
       <div className="profile-compact">
         <div className="card card-pad">
           <div className="profile-top">
@@ -113,6 +140,8 @@ export default function ProfilePage() {
           </div>
           <p className="small muted" style={{ margin: 0 }}>To change your password, sign out and use “Forgot password?” on the sign-in page.</p>
         </div>
+      </div>
+      <ProfileArt />
       </div>
     </>
   );
