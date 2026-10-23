@@ -191,17 +191,15 @@ export default function ResumesPage() {
         {list.isError && <div className="card-body"><Alert tone="error">{errorMessage(list.error)}</Alert></div>}
         {list.data?.items.length === 0 && <Empty title="No resumes found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}
         {list.data && list.data.items.length > 0 && (
-          <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>Candidate</th><th>Category</th><th>Experience</th><th>Location</th><th>Top skills</th><th>Status by job</th><th>Source</th><th>Added</th><th>Resume</th></tr></thead>
+          <div className="table-wrap fit">
+            <table className="table fit">
+              <thead><tr><th>Candidate</th><th>Category</th><th>Location</th><th>Status</th><th>Source</th><th>Added</th><th>Resume</th></tr></thead>
               <tbody>
                 {list.data.items.map((c) => (
                   <tr key={c.id} className="clickable" onClick={() => setOpenId(c.id)}>
                     <td><div className="cell-title">{c.name ?? "Name not given"}</div><div className="cell-sub">{c.current_title ?? c.email ?? ""}</div></td>
                     <td>{c.category ? <span className="badge brand plain">{c.category}</span> : "—"}</td>
-                    <td>{formatYears(c.total_years_experience)}</td>
                     <td>{c.location ?? "—"}</td>
-                    <td><div className="chips">{c.skills.slice(0, 3).map((s) => <span key={s} className="tag gray">{s}</span>)}{c.skills.length > 3 && <span className="muted small">+{c.skills.length - 3}</span>}</div></td>
                     <td><JobStatuses items={c.job_statuses} /></td>
                     <td><SourceBadge site={c.source_site} /></td>
                     <td className="muted">{formatDateTime(c.created_at)}</td>
@@ -225,15 +223,21 @@ export default function ResumesPage() {
 /** A candidate's status per job ("New" when not matched to any job yet). */
 function JobStatuses({ items, full }: { items: Candidate["job_statuses"]; full?: boolean }) {
   if (!items.length) return <StatusBadge status={null} />;
-  const shown = full ? items : items.slice(0, 2);
+  if (!full) {
+    const all = items.map((i) => `${i.job_title}: ${i.status.replace("_", " ")}`).join(", ");
+    return (
+      <div className="row" style={{ gap: 4, flexWrap: "nowrap" }} title={all}>
+        <StatusBadge status={items[0].status} />{items.length > 1 && <span className="small muted">+{items.length - 1}</span>}
+      </div>
+    );
+  }
   return (
     <div className="stack" style={{ gap: 4 }}>
-      {shown.map((s) => (
+      {items.map((s) => (
         <div key={s.job_id} className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
           <StatusBadge status={s.status} /><span className="small muted" style={{ whiteSpace: "nowrap" }}>{s.job_title}</span>
         </div>
       ))}
-      {!full && items.length > 2 && <span className="small muted">+{items.length - 2} more jobs</span>}
     </div>
   );
 }
@@ -253,7 +257,7 @@ function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const [view, setView] = useState<"profile" | "resume">("profile");
   const c = detail.data;
   return (
-    <Drawer title={c?.name ?? "Candidate"} onClose={onClose} wide
+    <Drawer title={c?.name ?? "Candidate"} onClose={onClose} half
             footer={<>
               <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}>Download</button>
             </>}>

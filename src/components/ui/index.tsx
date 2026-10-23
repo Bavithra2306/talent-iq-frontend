@@ -102,13 +102,13 @@ export function Modal({ title, onClose, children, footer, wide }: {
   );
 }
 
-export function Drawer({ title, onClose, children, footer, wide }: {
-  title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean;
+export function Drawer({ title, onClose, children, footer, wide, half }: {
+  title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; half?: boolean;
 }) {
   useEscape(onClose);
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <aside className={`drawer ${wide ? "wide" : ""}`} role="dialog" aria-modal="true">
+      <aside className={`drawer ${wide ? "wide" : ""} ${half ? "half" : ""}`} role="dialog" aria-modal="true">
         <div className="modal-header"><h2>{title}</h2><button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close"><X /></button></div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
