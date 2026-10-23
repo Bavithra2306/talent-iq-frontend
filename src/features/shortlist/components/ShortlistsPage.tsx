@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, FileText, ListChecks, Search } from "lucide-react";
 import { Alert, Drawer, Empty, Loading, PageHeader, ScoreBar, StatusBadge, useToast } from "../../../components/ui";
@@ -12,7 +11,6 @@ import JobSummary from "./JobSummary";
 
 /** Pick a job to match, and see scored candidates across all jobs. */
 export default function ShortlistsPage() {
-  const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [listOpen, setListOpen] = useState(false); // the scored list is folded until you open it
