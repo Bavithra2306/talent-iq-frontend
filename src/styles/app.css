@@ -974,20 +974,15 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .appearance { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 @media (prefers-reduced-motion: reduce) { .greet-sun, .greet-cloud, .greet-star { animation: none; } }
 
-/* talent map */
-.profile-layout:not(.with-map) { grid-template-columns: minmax(0, 460px); }
-.talent-map { position: sticky; top: 24px; padding: 18px 20px; display: grid; gap: 12px; }
-.talent-map-head { display: grid; gap: 2px; }
-.talent-map-head h2 { font-size: 16px; }
-.talent-map-body { display: grid; grid-template-columns: minmax(0, 300px) minmax(150px, 1fr); gap: 20px; align-items: center; }
-.talent-map svg { width: 100%; height: auto; max-height: 480px; }
-.map-dot { fill: var(--ink-300); }
-.map-core { fill: var(--brand-600); }
-.map-ping { fill: var(--brand-500); opacity: .35; transform-box: fill-box; transform-origin: center; animation: map-ping 2.6s ease-out infinite; }
-@keyframes map-ping { from { transform: scale(.7); opacity: .55; } to { transform: scale(2.1); opacity: 0; } }
-.map-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.map-legend li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; font-size: 13.5px; }
-.map-swatch { width: 9px; height: 9px; border-radius: 50%; background: var(--brand-600); }
-.map-swatch.off { background: var(--ink-300); }
-@media (max-width: 1100px) { .profile-layout.with-map { grid-template-columns: minmax(0, 460px); } .talent-map { display: none; } }
-@media (prefers-reduced-motion: reduce) { .map-ping { animation: none; } }
+/* profile page: one centred column */
+.profile-center { display: grid; justify-items: center; }
+.profile-center .profile-compact { width: 100%; max-width: 480px; }
+.recent-activity { padding: 16px 18px; display: grid; gap: 10px; }
+.activity-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 120px; }
+.activity-col { display: grid; gap: 4px; justify-items: center; align-content: end; height: 100%; }
+.activity-bar { width: 100%; max-width: 34px; min-height: 3px; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--brand-500), var(--brand-600)); transform-origin: bottom; animation: bar-grow .6s cubic-bezier(.2,.7,.2,1) both; }
+.activity-bar.zero { background: var(--ink-200); }
+.activity-col small { font-size: 11px; color: var(--ink-500); }
+.activity-col b { font-size: 11px; font-weight: 600; color: var(--ink-700); min-height: 14px; }
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .activity-bar { animation: none; } }

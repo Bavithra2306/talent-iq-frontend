@@ -6,7 +6,7 @@ import { Alert, PageHeader, useToast } from "../../../components/ui";
 import { updateProfile } from "../../auth/services/authService";
 import { errorMessage } from "../../../lib/axios";
 import { formatDateTime, initials } from "../../../utils/format";
-import TalentMap from "./TalentMap";
+import RecentActivity from "./RecentActivity";
 import { useTheme } from "../../../app/theme";
 
 const PHONE = /^[+0-9][0-9 ()-]{6,19}$/;
@@ -55,9 +55,9 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="My profile" subtitle="Your email and role are managed by your admin." />
-      <div className={`profile-layout ${user.role === "recruiter" ? "with-map" : ""}`}>
+      <div className="profile-center">
       <div className="profile-compact">
+        <PageHeader title="My profile" subtitle="Your email and role are managed by your admin." />
         <div className="card card-pad">
           <div className="profile-top">
             <div className="avatar">{initials(user.name, user.email[0]?.toUpperCase())}</div>
@@ -125,8 +125,9 @@ export default function ProfilePage() {
           </div>
           <p className="small muted" style={{ margin: 0 }}>To change your password, sign out and use “Forgot password?” on the sign-in page.</p>
         </div>
+        {user.role !== "hiring_manager" && <RecentActivity />}
       </div>
-      {user.role === "recruiter" && <TalentMap />}
+      
       </div>
     </>
   );
