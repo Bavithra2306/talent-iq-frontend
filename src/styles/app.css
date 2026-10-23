@@ -884,3 +884,6 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .table.fit th:nth-child(1) { width: 26%; } .table.fit th:nth-child(2) { width: 15%; } .table.fit th:nth-child(3) { width: 14%; }
 .table.fit th:nth-child(4) { width: 11%; } .table.fit th:nth-child(5) { width: 12%; } .table.fit th:nth-child(6) { width: 12%; }
 .table.fit th:nth-child(7) { width: 10%; }
+
+/* candidate details: centred window instead of a right-hand panel */
+.drawer.half { margin: auto; height: auto; max-height: 88vh; border-radius: 14px; animation: pop .18s ease-out both; }
