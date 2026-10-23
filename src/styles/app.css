@@ -1084,3 +1084,7 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .pager-btn.on { background: var(--brand-600); border-color: var(--brand-600); color: #fff; cursor: default; }
 .pager-btn:disabled { opacity: .45; cursor: not-allowed; }
 .pager-gap { padding: 0 4px; color: var(--ink-400); }
+
+/* the profile menu opens to the right of the profile button */
+.sidebar .menu { bottom: 0; top: auto; left: calc(100% + 12px); right: auto; transform-origin: left bottom; }
+.sidebar .menu::after { left: -7px; bottom: 20px; border: 0; border-left: 1px solid var(--ink-200); border-bottom: 1px solid var(--ink-200); }
