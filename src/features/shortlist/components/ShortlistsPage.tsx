@@ -176,8 +176,7 @@ export default function ShortlistsPage() {
       </div>
 
       {openEntry && (
-        <Drawer title="Candidate details" onClose={() => setOpenEntry(null)} half
-                footer={<button className="btn" onClick={() => navigate(`/jobs/${openEntry.job_id}/shortlist`)}>Open this job's shortlist</button>}>
+        <Drawer title="Candidate details" onClose={() => setOpenEntry(null)} half>
           <p className="muted small" style={{ marginBottom: 10 }}>For the job: <strong>{jobTitle(openEntry.job_id)}</strong></p>
           <EntryDetail key={openEntry.id} entry={openEntry} onOpenResume={() => openFile(`/api/v1/candidates/${openEntry.candidate_id}/resume`, openEntry.name ?? "Resume")}
                        onSaveNotes={(text) => saveNotes.mutate({ entryId: openEntry.id, text })} savingNotes={saveNotes.isPending} />
