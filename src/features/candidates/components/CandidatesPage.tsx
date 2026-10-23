@@ -62,7 +62,7 @@ export default function ResumesPage() {
     },
   });
 
-  const setFilter = (key: keyof typeof filters, value: string) => { setFilters((f) => ({ ...f, [key]: value })); setOffset(0); setListOpen(true); };
+  const setFilter = (key: keyof typeof filters, value: string) => { setFilters((f) => ({ ...f, [key]: value })); setOffset(0); };
   const addFiles = (incoming: File[]) => {
     setFiles((prev) => [...prev, ...incoming.filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size))]);
   };
