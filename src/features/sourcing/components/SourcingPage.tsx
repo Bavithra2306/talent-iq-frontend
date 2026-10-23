@@ -51,6 +51,8 @@ export default function SourcingPage() {
     onSuccess: (r) => { setBatchId(r.batch_id); setFinished(false); setViewing(false); },
   });
 
+  const running = run.isPending || (batchId !== null && !finished); // one run at a time: the button waits for the search to finish
+
   const toggle = (t: SourceType) => setSelected((s) => {
     const next = new Set(s);
     if (next.has(t)) next.delete(t); else next.add(t);
@@ -70,8 +72,8 @@ export default function SourcingPage() {
       <PageHeader
         title="Sourcing"
         subtitle="Collect resumes from public sources. They are read and checked exactly like uploads."
-        actions={<button className="btn btn-primary" disabled={invalid || run.isPending} onClick={() => run.mutate()}>
-          <Play /> {run.isPending ? "Starting…" : `Start (${selected.size} source${selected.size === 1 ? "" : "s"})`}
+        actions={<button className="btn btn-primary" disabled={invalid || running} onClick={() => run.mutate()}>
+          <Play /> {run.isPending ? "Starting…" : running ? "Sourcing…" : `Start (${selected.size} source${selected.size === 1 ? "" : "s"})`}
         </button>}
       />
       {run.isError && <div style={{ marginBottom: 16 }}><Alert tone="error">{errorMessage(run.error)}</Alert></div>}

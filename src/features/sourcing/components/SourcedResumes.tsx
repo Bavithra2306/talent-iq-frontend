@@ -60,7 +60,6 @@ function SourcedRow({ c, open, onToggle }: { c: CandidateDetail; open: boolean; 
             <dd>{c.education?.length
               ? <ul className="reasons">{c.education.map((e, i) => <li key={i}>{[e.degree, e.institution, e.year].filter(Boolean).join(", ")}</li>)}</ul>
               : "—"}</dd>
-            <dt>Read by</dt><dd className="muted">{c.extraction_model ?? "—"}</dd>
           </dl>
           <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View resume</button>
         </div>
