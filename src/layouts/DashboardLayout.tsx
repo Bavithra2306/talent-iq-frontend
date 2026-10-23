@@ -81,9 +81,10 @@ export default function Layout() {
             );
           })}
         </nav>
+        <div className="sidebar-bottom"><ProfileMenu /></div>
       </aside>
       <main className="main">
-        <div className="topbar"><BackButton /><ProfileMenu /></div>
+        <div className="topbar"><BackButton /></div>
         <Outlet />
       </main>
     </div>
@@ -119,6 +120,7 @@ function ProfileMenu() {
     <div className="profile-menu" ref={box}>
       <button className="profile-button" onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} title="Your profile">
         <span className="avatar">{initials(user.name, user.email[0]?.toUpperCase())}</span>
+        <span className="profile-who"><strong>{user.name || user.email}</strong><small>{ROLE_LABEL[user.role]}</small></span>
       </button>
       {open && (
         <div className="menu" role="menu">
