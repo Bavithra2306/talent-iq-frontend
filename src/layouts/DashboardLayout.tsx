@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
-  Briefcase, ClipboardCheck, Globe, LayoutDashboard, ListChecks, LogOut, PanelLeftClose, PanelLeftOpen, ScrollText, UserCircle, UserPlus, Users,
+  Briefcase, ClipboardCheck, Globe, LayoutDashboard, ListChecks, LogOut, ChevronLeft, ChevronRight, ScrollText, UserCircle, UserPlus, Users,
   ArrowLeft,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -64,7 +64,7 @@ export default function Layout() {
           </NavLink>
           <button className="sidebar-toggle" onClick={toggle} aria-expanded={!collapsed} data-tip={collapsed ? "Expand menu" : "Minimize menu"}
                   aria-label={collapsed ? "Expand the menu" : "Minimize the menu"}>
-            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
           </button>
         </div>
         <nav className="nav">

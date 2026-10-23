@@ -1044,3 +1044,16 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 /* every field is listed; the list scrolls inside the small card */
 .barlist-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
 .donut-layout .barlist { max-height: 150px; overflow-y: auto; padding-right: 4px; align-content: start; }
+
+/* the menu toggle is a small arrow on the edge of the sidebar */
+.sidebar { z-index: 20; }
+.shell.collapsed { --sidebar-width: 76px; }
+.shell.collapsed .sidebar { padding: 20px 10px; }
+.shell.collapsed .sidebar-top { flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; }
+.sidebar-toggle, .shell.collapsed .sidebar-toggle { position: absolute; right: -12px; top: 30px; margin: 0; width: 24px; height: 24px; border-radius: 50%; padding: 0;
+  background: var(--surface); color: var(--ink-500); border: 1px solid var(--ink-200); box-shadow: var(--shadow-sm); z-index: 5; }
+.sidebar-toggle:hover { background: var(--brand-600); color: #fff; border-color: var(--brand-600); }
+.sidebar-toggle:hover::after { left: calc(100% + 10px); }
+
+/* greeting at the top left */
+.home-hello { text-align: left; justify-items: start; margin-top: 0; }
