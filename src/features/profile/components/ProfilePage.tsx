@@ -1,12 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { CalendarDays, Clock, Lock, Mail, MapPin, Phone, Save, ShieldCheck, User } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { CalendarDays, Clock, Lock, Mail, MapPin, Moon, Phone, Save, ShieldCheck, Sun, User } from "lucide-react";
 import { ROLE_LABEL, useSession } from "../../../app/session";
 import { Alert, PageHeader, useToast } from "../../../components/ui";
 import { updateProfile } from "../../auth/services/authService";
 import { errorMessage } from "../../../lib/axios";
 import { formatDateTime, initials } from "../../../utils/format";
-import { LogoMark } from "../../../components/Logo";
+import { api } from "../../../services/api";
+import { useTheme } from "../../../app/theme";
+import type { Role } from "../../../types/api";
 
 const PHONE = /^[+0-9][0-9 ()-]{6,19}$/;
 
@@ -27,26 +29,46 @@ function Row({ icon, label, value }: { icon: ReactNode; label: string; value: Re
   );
 }
 
-const ORBITS = [
-  { size: 46, dots: 3, seconds: 38, color: "#38BDF8" },
-  { size: 72, dots: 4, seconds: 56, color: "#818CF8" },
-  { size: 98, dots: 5, seconds: 80, color: "#34D399" },
-];
+type Moment = "morning" | "afternoon" | "evening" | "night";
 
-/** A calm decorative panel: people (dots) circling the TalentIQ spark, drawn together by soft pulses. */
-function ProfileArt() {
+function momentOf(hour: number): Moment {
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour < 17 && hour >= 12) return "afternoon";
+  if (hour >= 17 && hour < 20) return "evening";
+  return "night";
+}
+
+const GREETING: Record<Moment, string> = { morning: "Good morning", afternoon: "Good afternoon", evening: "Good evening", night: "Good night" };
+const STARS = Array.from({ length: 14 }, (_, i) => ({ left: `${(i * 37 + 9) % 92 + 4}%`, top: `${(i * 23 + 7) % 55 + 4}%`, delay: -((i * 0.7) % 3) }));
+
+/** A greeting that follows the time of day (sunrise, sun, sunset, moon and stars), with one line about your work. */
+function GreetingScene({ name, role }: { name: string; role: Role }) {
+  const moment = momentOf(new Date().getHours());
+  const resumes = useQuery({ queryKey: ["resume-review"], queryFn: api.reviewFiles, enabled: role === "recruiter" });
+  const shared = useQuery({ queryKey: ["review", "all"], queryFn: () => api.sharedWithMe({}), enabled: role === "hiring_manager" });
+  const waiting = role === "recruiter" ? resumes.data?.length : role === "hiring_manager" ? shared.data?.filter((e) => e.status === "shortlisted").length : undefined;
+  const line = role === "admin" ? "Your team is in good hands."
+    : waiting === undefined ? ""
+    : waiting === 0 ? "You are all caught up."
+    : role === "recruiter" ? `${waiting} resume${waiting === 1 ? "" : "s"} need${waiting === 1 ? "s" : ""} your review.`
+    : `${waiting} candidate${waiting === 1 ? " is" : "s are"} waiting for your decision.`;
   return (
-    <div className="profile-art" aria-hidden="true">
-      <div className="orbit-stage">
-        {ORBITS.map((o, i) => (
-          <div key={i} className="orbit" style={{ width: `${o.size}%`, height: `${o.size}%`, animationDuration: `${o.seconds}s`, animationDirection: i % 2 ? "reverse" : "normal" }}>
-            {Array.from({ length: o.dots }, (_, n) => (
-              <i key={n} className="orbit-dot" style={{ ["--a" as string]: `${(360 / o.dots) * n}deg`, background: o.color }} />
-            ))}
-          </div>
-        ))}
-        <span className="orbit-pulse" /><span className="orbit-pulse delay" />
-        <div className="orbit-core"><LogoMark size={64} animated /></div>
+    <div className={`greet ${moment}`} aria-label={`${GREETING[moment]}, ${name}`}>
+      <div className="greet-text">
+        <h2>{GREETING[moment]}, {name}</h2>
+        {line && <p>{line}</p>}
+      </div>
+      <div className="greet-sky" aria-hidden="true">
+        {STARS.map((st, i) => <i key={i} className="greet-star" style={{ left: st.left, top: st.top, animationDelay: `${st.delay}s` }} />)}
+        <span className="greet-sun" />
+        <span className="greet-cloud" style={{ top: "14%", width: 70, animationDuration: "46s" }} />
+        <span className="greet-cloud" style={{ top: "34%", width: 52, animationDuration: "64s", animationDelay: "-30s" }} />
+        <div className="greet-hills">
+          <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+            <path className="h1" d="M0 70 C60 30 120 40 190 62 S330 40 400 58 V120 H0Z" />
+            <path className="h2" d="M0 92 C70 64 140 74 210 88 S340 70 400 86 V120 H0Z" />
+          </svg>
+        </div>
       </div>
     </div>
   );
@@ -57,6 +79,7 @@ function ProfileArt() {
 export default function ProfilePage() {
   const { user, setUser } = useSession();
   const toast = useToast();
+  const [theme, setTheme] = useTheme();
   const [touched, setTouched] = useState(false);
   const [form, setForm] = useState({ name: user.name ?? "", contact: user.contact ?? "", location: user.location ?? "" });
   const errors = validate(form);
@@ -92,6 +115,14 @@ export default function ProfilePage() {
                 <span className={`badge plain ${user.is_active ? "green" : "red"}`}>{user.is_active ? "Active" : "Disabled"}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="card card-pad appearance">
+          <h2 style={{ fontSize: 15 }}>Appearance</h2>
+          <div className="segmented" role="group" aria-label="Theme">
+            <button className={theme === "light" ? "active" : ""} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><Sun /> Light</button>
+            <button className={theme === "dark" ? "active" : ""} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><Moon /> Dark</button>
           </div>
         </div>
 
@@ -141,7 +172,7 @@ export default function ProfilePage() {
           <p className="small muted" style={{ margin: 0 }}>To change your password, sign out and use “Forgot password?” on the sign-in page.</p>
         </div>
       </div>
-      <ProfileArt />
+      <GreetingScene name={(user.name || user.email).split(" ")[0]} role={user.role} />
       </div>
     </>
   );
