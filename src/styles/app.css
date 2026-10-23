@@ -866,5 +866,8 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .list-count { padding: 6px 14px; }
 
 .card .dropzone.compact { padding: 10px 24px; width: 100%; box-sizing: border-box; flex-direction: row; line-height: 1.3; }
-.card .dropzone.compact > div { display: none; }
-.card .dropzone.compact .muted { display: inline; }
+
+/* small upload box (about 3 inches wide) */
+.card .dropzone.compact { width: 300px; max-width: 100%; flex-wrap: nowrap; justify-content: flex-start; gap: 10px; padding: 8px 14px; text-align: left; }
+.dropzone.compact .dz-text { display: grid; gap: 1px; min-width: 0; }
+.dropzone.compact .dz-hint { display: block; font-size: 11.5px; margin: 0; }

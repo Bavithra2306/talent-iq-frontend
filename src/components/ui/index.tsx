@@ -221,8 +221,10 @@ export function FileDrop({ accept, multiple, folders, compact, onFiles, hint }: 
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && input.current?.click()}
       >
         <UploadCloud />
-        <strong>Drop {multiple ? (folders ? "files or a folder" : "files") : "a file"} here or click to browse</strong>
-        {hint && <div className="muted small" style={{ marginTop: 4 }}>{hint}</div>}
+        <span className="dz-text">
+          <strong>{compact ? "Upload resumes" : `Drop ${multiple ? (folders ? "files or a folder" : "files") : "a file"} here or click to browse`}</strong>
+          {hint && <span className="muted small dz-hint">{compact ? "Drop files or a folder, or click to browse" : hint}</span>}
+        </span>
         <input ref={input} type="file" accept={accept} multiple={multiple} hidden
                onChange={(e) => { onFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
       </div>
