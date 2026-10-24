@@ -181,12 +181,11 @@ export default function JobShortlistPage() {
 
         {/* ---- weights ---- */}
         <div className="card">
-          <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> How the score is made</h2>
-            <p>Every job starts with the default weights: 40% skills, 25% experience, 20% role and industry, 15% education. Change them only if this job needs it; the four must add up to 100%.</p></div></div>
+          <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> How the score is made</h2></div></div>
           <div className="card-body stack">
-            {weights && SCORE_PARTS.map(({ weight: key, label, color, hint }) => (
-              <div key={key} className="slider-row weight-row">
-                <span className="weight-name"><span><i className="dot-swatch" style={{ background: color }} /> {label}</span><small className="muted">{hint}</small></span>
+            {weights && SCORE_PARTS.map(({ weight: key, label, color }) => (
+              <div key={key} className="slider-row">
+                <span><i className="dot-swatch" style={{ background: color }} /> {label}</span>
                 <input type="range" className="weight-slider" min={0} max={100} step={5} value={weights[key]}
                        style={{ ["--c" as string]: color, ["--v" as string]: `${weights[key]}%` }} aria-label={`${label} weight`}
                        onChange={(e) => { const next = { ...weights, [key]: Number(e.target.value) }; setWeights(next); setPreview(total(next) === 100); }} />
