@@ -7,12 +7,12 @@ import { formatYears } from "../../../utils/format";
 
 /** Resumes read by the AI but missing a required field. The recruiter looks at each one and decides:
  *  keep it in the ready list, or set it aside as unprocessable. Nothing is changed or deleted. */
-export default function NeedsDecision() {
+export default function NeedsDecision({ origin }: { origin: "uploaded" | "sourced" }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const list = useQuery({
-    queryKey: ["candidates", "needs-review"],
-    queryFn: () => api.listCandidates({ readiness: "needs_review", limit: 100, sort: "date_added", order: "desc" }),
+    queryKey: ["candidates", "needs-review", origin],
+    queryFn: () => api.listCandidates({ readiness: "needs_review", origin, limit: 100, sort: "date_added", order: "desc" }),
   });
   const place = useMutation({
     mutationFn: ({ id, readiness }: { id: string; readiness: "ready" | "unprocessable" }) => api.setReadiness(id, readiness),
@@ -30,7 +30,7 @@ export default function NeedsDecision() {
       <div className="card-header">
         <div>
           <h2>Waiting for your decision <span className="badge amber plain">{items.length}</span></h2>
-          <p>These resumes are missing something required. Look at each one, then choose where it belongs.</p>
+          <p>These {origin === "sourced" ? "sourced " : ""}resumes are missing something required. Look at each one, then choose where it belongs.</p>
         </div>
       </div>
       <div className="decision-list">

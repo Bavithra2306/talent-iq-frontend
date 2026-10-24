@@ -6,8 +6,8 @@ import { errorMessage } from "../../../lib/axios";
 import { formatDateTime, labelize } from "../../../utils/format";
 
 /** Files judged "not a resume". The recruiter opens each one and decides.
- *  `origin`: "all" on the Resumes page (uploads and sourcing), "sourcing" on the Sourcing page. */
-export default function ReviewQueue({ origin }: { origin: "all" | "sourcing" }) {
+ *  `origin`: "uploads" on the Resumes page, "sourcing" on the Sourcing page: each page shows its own. */
+export default function ReviewQueue({ origin }: { origin: "uploads" | "sourcing" }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const files = useQuery({ queryKey: ["resume-review"], queryFn: api.reviewFiles });
@@ -27,7 +27,7 @@ export default function ReviewQueue({ origin }: { origin: "all" | "sourcing" }) 
     onError: (err) => toast(errorMessage(err), "error"),
   });
 
-  const items = (files.data ?? []).filter((f) => origin === "all" || Boolean(f.source_site));
+  const items = (files.data ?? []).filter((f) => (origin === "sourcing") === Boolean(f.source_site));
   if (!items.length) return null;
   const busy = accept.isPending || remove.isPending;
   return (

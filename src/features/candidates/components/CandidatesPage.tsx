@@ -10,6 +10,7 @@ import { MAX_RESUME_FILES, MAX_UPLOAD_MB } from "../../../config/constants";
 import { formatBytes, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
 import UploadStatus from "./UploadStatus";
 import NeedsDecision from "./NeedsDecision";
+import { refreshResumeLists } from "../refresh";
 import ReviewQueue from "./ReviewQueue";
 
 const LIMIT = 20;
@@ -128,13 +129,8 @@ export default function ResumesPage() {
           )}
           {batchId && (
             <UploadStatus key={batchId} batchId={batchId} onClose={clearBatch}
-                          onFinished={() => {
-                            void queryClient.invalidateQueries({ queryKey: ["candidates"] });
-                            void queryClient.invalidateQueries({ queryKey: ["categories"] });
-                            void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
-                            void queryClient.invalidateQueries({ queryKey: ["quota"] });
-                            void queryClient.invalidateQueries({ queryKey: ["failed-resumes"] });
-                          }} />
+                          onChange={() => refreshResumeLists(queryClient)}
+                          onFinished={() => refreshResumeLists(queryClient)} />
           )}
           {!batchId && (failed.data ?? 0) > 0 && (
             <Alert tone="warn">
@@ -150,9 +146,9 @@ export default function ResumesPage() {
         </div>
       </div>
 
-      <ReviewQueue origin="all" />
+      <ReviewQueue origin="uploads" />
 
-      <NeedsDecision />
+      <NeedsDecision origin="uploaded" />
 
       <div className="card">
         <div className="list-heads" role="tablist" aria-label="Resume lists">

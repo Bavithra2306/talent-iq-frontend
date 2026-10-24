@@ -15,8 +15,8 @@ function currentStep(s: BatchStatus | undefined): number {
 }
 
 /** What happened to the latest upload: the steps while it runs, then the counts and any failed files. */
-export default function UploadStatus({ batchId, onFinished, onClose }: {
-  batchId: string; onFinished?: (s: BatchStatus) => void; onClose: () => void;
+export default function UploadStatus({ batchId, onFinished, onChange, onClose }: {
+  batchId: string; onFinished?: (s: BatchStatus) => void; onChange?: () => void; onClose: () => void;
 }) {
   const status = useQuery({
     queryKey: ["batch", batchId],
@@ -30,6 +30,11 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
     if (finished && s) onFinished?.(s);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
+  // Reload the result lists as the counts move, so nothing waits for a page refresh.
+  useEffect(() => {
+    if (s) onChange?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s?.saved, s?.needs_review, s?.failed, s?.stage]);
   if (status.isError) return null;
 
   const step = currentStep(s);
@@ -66,7 +71,7 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
           <div className="count-tiles">
             <div className="count-tile"><strong><AnimatedNumber value={s.total ?? 0} /></strong><span>files uploaded</span></div>
             <div className="count-tile ok"><strong><AnimatedNumber value={s.saved ?? 0} /></strong><span>ready for matching{updated > 0 && ` (${(s.saved ?? 0) - updated} new, ${updated} updated)`}</span></div>
-            <div className={`count-tile ${s.needs_review ? "warn" : ""}`}><strong><AnimatedNumber value={s.needs_review ?? 0} /></strong><span>not a resume</span></div>
+            <div className={`count-tile ${s.needs_review ? "warn" : ""}`}><strong><AnimatedNumber value={s.needs_review ?? 0} /></strong><span>waiting for your review</span></div>
             <div className={`count-tile ${s.failed ? "bad" : ""}`}><strong><AnimatedNumber value={s.failed ?? 0} /></strong><span>failed to read</span></div>
           </div>
           {Boolean(s.embeddings_pending) && (
@@ -76,7 +81,7 @@ export default function UploadStatus({ batchId, onFinished, onClose }: {
             </p>
           )}
           {Boolean(s.needs_review) && (
-            <p className="small muted" style={{ margin: 0 }}>Files that are not resumes are listed under <strong>Needs your review</strong> below.</p>
+            <p className="small muted" style={{ margin: 0 }}>These resumes need your decision: see <strong>Waiting for your decision</strong> and <strong>Needs your review</strong> below.</p>
           )}
           {s.failures.length > 0 && (
             <div className="failed-files">

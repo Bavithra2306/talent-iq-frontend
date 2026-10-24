@@ -9,6 +9,8 @@ import type { SourceInfo } from "../../../types/api";
 import BatchProgress from "../../candidates/components/BatchProgress";
 import ReviewQueue from "../../candidates/components/ReviewQueue";
 import SourcedResumes from "./SourcedResumes";
+import NeedsDecision from "../../candidates/components/NeedsDecision";
+import { refreshResumeLists } from "../../candidates/refresh";
 import { CATEGORIES } from "../../jobs/components/JobForm";
 
 type SourceType = SourceInfo["type"];
@@ -154,11 +156,8 @@ export default function SourcingPage() {
           <div className="card-header"><div><h2>Sourcing run</h2><p>Each source reports what it found, then the resumes are read like uploads.</p></div></div>
           <div className="card-body">
             <BatchProgress key={batchId} batchId={batchId} fetchStatus={api.batchStatus}
-                           onFinished={() => {
-                             setFinished(true);
-                             void queryClient.invalidateQueries({ queryKey: ["candidates"] });
-                             void queryClient.invalidateQueries({ queryKey: ["resume-review"] });
-                           }} />
+                           onChange={() => refreshResumeLists(queryClient)}
+                           onFinished={() => { setFinished(true); refreshResumeLists(queryClient); }} />
             {finished && (
               <div className="row" style={{ justifyContent: "center", marginTop: 12 }}>
                 <button className="btn btn-primary" onClick={() => setViewing(true)}><Eye /> View resumes</button>
@@ -169,6 +168,8 @@ export default function SourcingPage() {
       )}
 
       {viewing && batchId && <SourcedResumes batchId={batchId} onClose={() => setViewing(false)} />}
+
+      <NeedsDecision origin="sourced" />
 
       <ReviewQueue origin="sourcing" />
     </>
