@@ -3,6 +3,7 @@ import { FileText, Save } from "lucide-react";
 import { Alert, ScoreBar, ScoreRing, StatusBadge } from "../../../components/ui";
 import { formatYears } from "../../../utils/format";
 import type { ShortlistEntry, SkillMatch } from "../../../types/api";
+import { SCORE_PARTS } from "../scoreParts";
 
 const LEVEL: Record<number, { label: string; tone: string }> = {
   100: { label: "Has it", tone: "green" },
@@ -13,7 +14,7 @@ const LEVEL: Record<number, { label: string; tone: string }> = {
 
 const INDUSTRY_LEVEL: Record<number, string> = { 100: "Same industry", 75: "Closely related", 50: "Some overlap", 0: "Different industry" };
 
-const PART_LABEL ={ skills: "Skills", role: "Role & industry", experience: "Experience", education: "Education" } as const;
+const PART_LABEL = Object.fromEntries(SCORE_PARTS.map((p) => [p.part, p.label])) as Record<(typeof SCORE_PARTS)[number]["part"], string>;
 
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${Math.round(v * 100)}%`);
 
@@ -67,7 +68,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
       {parts && (
         <div className="card card-pad breakdown">
           <h3>How the score adds up</h3>
-          {(["skills", "role", "experience", "education"] as const).map((k) => (
+          {SCORE_PARTS.map((p) => p.part).map((k) => (
             <div key={k} className="breakdown-row">
               <span>{PART_LABEL[k]} <span className="muted small">({parts[k].weight}%)</span></span>
               <ScoreBar value={parts[k].score} />

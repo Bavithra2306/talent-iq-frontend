@@ -6,13 +6,9 @@ import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatYears } from "../../../utils/format";
 import type { ShortlistEntry } from "../../../types/api";
+import { SCORE_PARTS } from "../scoreParts";
 
-const PARTS = [
-  { key: "skills", label: "Skills", color: "#047857" },
-  { key: "role", label: "Role", color: "#D4A017" },
-  { key: "experience", label: "Experience", color: "#34D399" },
-  { key: "education", label: "Education", color: "#92400E" },
-] as const;
+const PARTS = SCORE_PARTS.map((p) => ({ key: p.part, label: p.short, color: p.color }));
 
 /** Slides cards to their new place when the order changes (e.g. after moving a weight slider). */
 function useFlip(keys: string[]) {
@@ -139,7 +135,7 @@ export function CandidateCards({ items, onOpen, onToggle, toggling, compare, onC
 
 /** Two or three candidates side by side. */
 export function CompareModal({ entries, onClose }: { entries: ShortlistEntry[]; onClose: () => void }) {
-  const best = (key: (typeof PARTS)[number]["key"]) => Math.max(...entries.map((e) => e.scores[key] ?? -1));
+  const best = (key: (typeof SCORE_PARTS)[number]["part"]) => Math.max(...entries.map((e) => e.scores[key] ?? -1));
   return (
     <Modal title={`Compare ${entries.length} candidates`} onClose={onClose} wide>
       <div className="compare" style={{ gridTemplateColumns: `repeat(${entries.length}, minmax(0, 1fr))` }}>

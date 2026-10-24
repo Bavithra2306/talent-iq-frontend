@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Check, Code2, Database, Eye, Globe, Link2, Play, Sparkles } from "lucide-react";
+import { BookOpen, Check, Code2, Database, Eye, Globe, Link2, Play, Search, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 import { Alert, AnimatedNumber, Skeleton, PageHeader } from "../../../components/ui";
 import { api } from "../../../services/api";
@@ -15,7 +15,7 @@ import { CATEGORIES } from "../../jobs/components/JobForm";
 
 type SourceType = SourceInfo["type"];
 const ICONS: Record<SourceType, ComponentType<{ size?: number }>> = {
-  huggingface: Database, kaggle: BookOpen, github: Code2, stackexchange: Globe, url: Link2,
+  huggingface: Database, kaggle: BookOpen, github: Code2, stackexchange: Globe, google: Search, url: Link2,
 };
 
 interface Options {
@@ -23,6 +23,7 @@ interface Options {
   kaggle: { category: string; max_results: number };
   github: { query: string; max_results: number };
   stackexchange: { tag: string; max_results: number };
+  google: { query: string; max_results: number };
   url: { urls: string; follow_links: boolean };
 }
 
@@ -31,6 +32,7 @@ const DEFAULTS: Options = {
   kaggle: { category: "IT", max_results: 20 },
   github: { query: "language:python location:chennai", max_results: 10 },
   stackexchange: { tag: "python", max_results: 10 },
+  google: { query: "java developer chennai", max_results: 10 },
   url: { urls: "", follow_links: true },
 };
 
@@ -235,6 +237,16 @@ function SourceOptions({ type, opts, update, byKeyword }: {
           <div className="field"><label>How many</label>{max(opts.stackexchange.max_results, 200, (v) => update("stackexchange", { max_results: v }))}</div>
         </div>
       );
+    case "google":
+      return (
+        <div className="form-grid">
+          <div className="field"><label>Search</label>
+            <input className="input" value={byKeyword ? "" : opts.google.query} disabled={byKeyword} placeholder={byKeyword ? "Set by your keyword" : undefined}
+                   onChange={(e) => update("google", { query: e.target.value })} />
+            <span className="hint">{byKeyword ? fromKeyword : "Words a resume would contain, e.g. java developer chennai."}</span></div>
+          <div className="field"><label>How many</label>{max(opts.google.max_results, 30, (v) => update("google", { max_results: v }))}</div>
+        </div>
+      );
     case "url":
       return (
         <div className="stack" style={{ gap: 8 }}>
@@ -255,6 +267,7 @@ function buildRequest(selected: Set<SourceType>, o: Options): Record<string, unk
   if (selected.has("kaggle")) sources.push({ type: "kaggle", ...o.kaggle, category: o.kaggle.category || null });
   if (selected.has("github")) sources.push({ type: "github", ...o.github });
   if (selected.has("stackexchange")) sources.push({ type: "stackexchange", ...o.stackexchange });
+  if (selected.has("google")) sources.push({ type: "google", ...o.google });
   if (selected.has("url")) {
     sources.push({ type: "url", urls: o.url.urls.split(/\s+/).filter(Boolean).slice(0, 200), follow_links: o.url.follow_links });
   }

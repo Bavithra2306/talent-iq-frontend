@@ -255,7 +255,7 @@ export interface DirectoryUser {
 }
 
 export interface SourceInfo {
-  type: "huggingface" | "kaggle" | "github" | "stackexchange" | "url";
+  type: "huggingface" | "kaggle" | "github" | "stackexchange" | "google" | "url";
   name: string;
   description: string;
   parameters: Record<string, unknown>;

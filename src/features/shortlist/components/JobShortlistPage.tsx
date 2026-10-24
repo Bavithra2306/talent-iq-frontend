@@ -12,10 +12,8 @@ import type { ParsedFilter, ShortlistEntry, Weights } from "../../../types/api";
 import EntryDetail from "./EntryDetail";
 import MatchPipeline from "./MatchPipeline";
 import { CandidateCards, CompareModal } from "./CandidateCards";
+import { DEFAULT_WEIGHTS, SCORE_PARTS } from "../scoreParts";
 
-const WEIGHT_LABELS: [keyof Weights, string, string][] = [
-  ["skill_pct", "Skills", "#047857"], ["role_pct", "Role", "#D4A017"], ["exp_pct", "Experience", "#34D399"], ["edu_pct", "Education", "#92400E"],
-];
 
 const total = (w: Weights) => w.skill_pct + w.role_pct + w.exp_pct + w.edu_pct;
 
@@ -184,11 +182,11 @@ export default function JobShortlistPage() {
         {/* ---- weights ---- */}
         <div className="card">
           <div className="card-header"><div><h2><SlidersHorizontal size={17} style={{ verticalAlign: -3 }} /> How the score is made</h2>
-            <p>Drag a slider and watch the ranking change. The four must add up to 100%; change the others yourself until they do.</p></div></div>
+            <p>Every job starts with the default weights: 40% skills, 25% experience, 20% role and industry, 15% education. Change them only if this job needs it; the four must add up to 100%.</p></div></div>
           <div className="card-body stack">
-            {weights && WEIGHT_LABELS.map(([key, label, color]) => (
-              <div key={key} className="slider-row">
-                <span><i className="dot-swatch" style={{ background: color }} /> {label}</span>
+            {weights && SCORE_PARTS.map(({ weight: key, label, color, hint }) => (
+              <div key={key} className="slider-row weight-row">
+                <span className="weight-name"><span><i className="dot-swatch" style={{ background: color }} /> {label}</span><small className="muted">{hint}</small></span>
                 <input type="range" className="weight-slider" min={0} max={100} step={5} value={weights[key]}
                        style={{ ["--c" as string]: color, ["--v" as string]: `${weights[key]}%` }} aria-label={`${label} weight`}
                        onChange={(e) => { const next = { ...weights, [key]: Number(e.target.value) }; setWeights(next); setPreview(total(next) === 100); }} />
@@ -200,7 +198,7 @@ export default function JobShortlistPage() {
                 Total {sum}% {sum !== 100 && "— the four weights must add up to 100% before you can save"}
               </span>
               <div className="row">
-                <button className="btn btn-sm" onClick={() => { setWeights({ skill_pct: 40, role_pct: 20, exp_pct: 25, edu_pct: 15 }); setPreview(true); }}>Reset</button>
+                <button className="btn btn-sm" onClick={() => { setWeights({ ...DEFAULT_WEIGHTS }); setPreview(true); }}>Reset</button>
                 <button className="btn btn-sm btn-primary" disabled={sum !== 100 || !changed || saveWeights.isPending} onClick={() => weights && saveWeights.mutate(weights)}>Save</button>
               </div>
             </div>
@@ -412,7 +410,7 @@ export default function JobShortlistPage() {
         <CompareModal entries={list.data.items.filter((e) => compare.includes(e.id))} onClose={() => setComparing(false)} />
       )}
       {openEntry && (
-        <Drawer title="Candidate match" onClose={() => setOpenEntry(null)} wide>
+        <Drawer title="Candidate match" onClose={() => setOpenEntry(null)} half>
           <EntryDetail key={openEntry.id + (openEntry.notes_by_recruiter ?? "")} entry={openEntry}
                        onOpenResume={() => void openFile(`/api/v1/candidates/${openEntry.candidate_id}/resume`)}
                        savingNotes={notes.isPending}
