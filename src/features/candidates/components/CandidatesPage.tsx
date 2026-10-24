@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Globe, RotateCcw, Search, Upload, User, Users, X } from "lucide-react";
-import { Alert, Drawer, Empty, FileDrop, Modal, InlineFile, Loading, PageHeader, Pagination, StatusBadge } from "../../../components/ui";
+import { FileText, Globe, RotateCcw, Search, Trash2, Upload, User, Users, X } from "lucide-react";
+import { Alert, Drawer, Empty, FileDrop, Modal, InlineFile, Loading, PageHeader, Pagination, StatusBadge, useToast } from "../../../components/ui";
 import { api, downloadFile, openFile } from "../../../services/api";
 import type { Candidate } from "../../../types/api";
 import { errorMessage } from "../../../lib/axios";
@@ -20,6 +20,7 @@ function storedBatch(): string | null {
 
 export default function ResumesPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [batchId, setBatchId] = useState<string | null>(storedBatch);
@@ -73,6 +74,19 @@ export default function ResumesPage() {
 
   const totalResumes = categories.data?.reduce((sum, c) => sum + c.count, 0);
   const closeUpload = () => { setUploadOpen(false); setFiles([]); upload.reset(); };
+  // Soft delete: the resume disappears from every list and result; the file and history are kept.
+  const remove = useMutation({
+    mutationFn: (id: string) => api.deleteCandidate(id),
+    onSuccess: () => {
+      setOpenId(null);
+      for (const key of ["candidates", "categories", "all-shortlists", "shortlist", "resume-review", "quota"]) void queryClient.invalidateQueries({ queryKey: [key] });
+      toast("Resume deleted.", "success");
+    },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
+  const confirmDelete = (id: string, name: string | null) => {
+    if (window.confirm(`Delete ${name ?? "this resume"}? It disappears from the lists and from matching. You can bring the person back by uploading their resume again.`)) remove.mutate(id);
+  };
   const clearBatch = () => { setBatchId(null); try { localStorage.removeItem(BATCH_KEY); } catch { /* ignore */ } };
 
   return (
@@ -180,7 +194,11 @@ export default function ResumesPage() {
                     <td><SourceBadge site={c.source_site} /></td>
                     <td className="muted">{formatDateTime(c.created_at)}</td>
                     <td onClick={(ev) => ev.stopPropagation()}>
-                      <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View</button>
+                      <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                        <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View</button>
+                        <button className="btn btn-sm btn-danger btn-icon" title="Delete resume" aria-label={`Delete ${c.name ?? "resume"}`}
+                                disabled={remove.isPending} onClick={() => confirmDelete(c.id, c.name)}><Trash2 /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -225,7 +243,7 @@ export default function ResumesPage() {
         </Modal>
       )}
 
-      {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} />}
+      {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} onDelete={(name) => confirmDelete(openId, name)} deleting={remove.isPending} />}
     </>
   );
 }
@@ -262,13 +280,14 @@ function SourceBadge({ site }: { site: string | null }) {
   return <span className="badge blue plain source-pill"><Globe /> {SITE_LABEL[site] ?? labelize(site)}</span>;
 }
 
-function CandidateDrawer({ id, onClose }: { id: string; onClose: () => void }) {
+function CandidateDrawer({ id, onClose, onDelete, deleting }: { id: string; onClose: () => void; onDelete: (name: string | null) => void; deleting: boolean }) {
   const detail = useQuery({ queryKey: ["candidate", id], queryFn: () => api.getCandidate(id) });
   const [view, setView] = useState<"profile" | "resume">("profile");
   const c = detail.data;
   return (
     <Drawer title={c?.name ?? "Candidate"} onClose={onClose} half
             footer={<>
+              <button className="btn btn-danger" disabled={deleting} onClick={() => onDelete(c?.name ?? null)}><Trash2 /> Delete</button>
               <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}>Download</button>
             </>}>
       {detail.isLoading && <Loading />}
