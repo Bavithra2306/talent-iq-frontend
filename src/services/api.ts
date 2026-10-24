@@ -42,6 +42,8 @@ export const api = {
   },
   createJob: async (body: JobInput, confirmDuplicate = false) =>
     (await apiClient.post<Job>(`${v1}/jobs`, body, { params: confirmDuplicate ? { confirm_duplicate: true } : {} })).data,
+  readinessCounts: async () => (await apiClient.get<Record<"ready" | "needs_review" | "unprocessable", number>>(`${v1}/candidates/readiness-counts`)).data,
+  setReadiness: async (id: string, readiness: "ready" | "unprocessable") => { await apiClient.put(`${v1}/candidates/${id}/readiness`, { readiness }); },
   deleteCandidate: async (id: string) => { await apiClient.delete(`${v1}/candidates/${id}`); },
   deleteJob: async (id: string) => { await apiClient.delete(`${v1}/jobs/${id}`); },
   updateJob: async (id: string, body: Partial<JobInput>) => (await apiClient.patch<Job>(`${v1}/jobs/${id}`, body)).data,

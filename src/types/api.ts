@@ -77,6 +77,8 @@ export interface Candidate {
   status: CandidateStatus | null;
   total_years_experience: string | number | null;
   current_resume_id: string;
+  readiness: "ready" | "needs_review" | "unprocessable";
+  readiness_reason: string | null;
   skills: string[];
   source_site: string | null;
   created_at: string;

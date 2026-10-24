@@ -1112,3 +1112,15 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .table.fit th:nth-child(4) { width: 11%; } .table.fit th:nth-child(5) { width: 12%; } .table.fit th:nth-child(6) { width: 12%; }
 .table.fit th:nth-child(7) { width: 15%; }
 .table.fit td:last-child { overflow: visible; white-space: nowrap; }
+
+/* resume lists: ready and not ready, and the resumes waiting for a decision */
+.list-heads { display: flex; gap: 4px; padding: 10px 14px 0; border-bottom: 1px solid var(--ink-200); }
+.list-head { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; font-weight: 700; color: var(--ink-500); cursor: pointer; margin-bottom: -1px; }
+.list-head:hover { color: var(--ink-900); }
+.list-head.active { color: var(--brand-700); border-bottom-color: var(--gold-400); }
+.cell-reason { margin-top: 2px; font-size: 12px; color: var(--red-600); }
+.needs-decision { border-color: var(--amber-100); }
+.decision-list { display: grid; }
+.decision-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--ink-100); flex-wrap: wrap; }
+.decision-who { display: grid; min-width: 0; }
+.decision-reason { font-size: 12.5px; color: var(--amber-600); font-weight: 600; }

@@ -9,6 +9,7 @@ import { errorMessage } from "../../../lib/axios";
 import { MAX_RESUME_FILES, MAX_UPLOAD_MB } from "../../../config/constants";
 import { formatBytes, formatDateTime, formatYears, labelize, STATUS_LABEL } from "../../../utils/format";
 import UploadStatus from "./UploadStatus";
+import NeedsDecision from "./NeedsDecision";
 import ReviewQueue from "./ReviewQueue";
 
 const LIMIT = 20;
@@ -26,12 +27,13 @@ export default function ResumesPage() {
   const [batchId, setBatchId] = useState<string | null>(storedBatch);
   const [rejected, setRejected] = useState<{ filename: string; reason: string }[]>([]);
   const [searchParams] = useSearchParams();
-  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", min_experience: "", max_experience: "", status: "", sort: "date_added", order: "desc" });
+  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", min_experience: "", max_experience: "", status: "", readiness: "ready", sort: "date_added", order: "desc" });
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false); // the upload dialog
 
   const categories = useQuery({ queryKey: ["categories"], queryFn: api.categories });
+  const counts = useQuery({ queryKey: ["readiness-counts"], queryFn: api.readinessCounts, refetchInterval: 30000 });
   // How many resumes are ready for matching (have their search fingerprints); refreshes every minute.
   const quota = useQuery({ queryKey: ["quota"], queryFn: api.embeddingQuota, refetchInterval: 60000 });
   const list = useQuery({
@@ -81,6 +83,16 @@ export default function ResumesPage() {
       setOpenId(null);
       for (const key of ["candidates", "categories", "all-shortlists", "shortlist", "resume-review", "quota"]) void queryClient.invalidateQueries({ queryKey: [key] });
       toast("Resume deleted.", "success");
+    },
+    onError: (err) => toast(errorMessage(err), "error"),
+  });
+  // The recruiter moves a resume between the ready list and the not-ready list. Nothing is deleted.
+  const place = useMutation({
+    mutationFn: ({ id, readiness }: { id: string; readiness: "ready" | "unprocessable" }) => api.setReadiness(id, readiness),
+    onSuccess: () => {
+      setOpenId(null);
+      for (const key of ["candidates", "readiness-counts", "categories", "all-shortlists", "quota"]) void queryClient.invalidateQueries({ queryKey: [key] });
+      toast("Resume moved.", "success");
     },
     onError: (err) => toast(errorMessage(err), "error"),
   });
@@ -140,12 +152,19 @@ export default function ResumesPage() {
 
       <ReviewQueue origin="all" />
 
+      <NeedsDecision />
+
       <div className="card">
-        {list.data && (
-          <div className="list-count">
-            {filters.status === "new" ? "New (not matched yet)" : filters.status ? STATUS_LABEL[filters.status as keyof typeof STATUS_LABEL] : "All resumes"}
-            {filters.category && ` · ${filters.category}`} <span className="badge brand plain">{list.data.total}</span></div>
-        )}
+        <div className="list-heads" role="tablist" aria-label="Resume lists">
+          <button role="tab" aria-selected={filters.readiness === "ready"} className={`list-head ${filters.readiness === "ready" ? "active" : ""}`}
+                  onClick={() => { setFilter("readiness", "ready"); }}>
+            Resumes ready for shortlisting <span className="badge brand plain">{counts.data?.ready ?? "…"}</span>
+          </button>
+          <button role="tab" aria-selected={filters.readiness === "unprocessable"} className={`list-head ${filters.readiness === "unprocessable" ? "active" : ""}`}
+                  onClick={() => { setFilter("readiness", "unprocessable"); }}>
+            Not ready for shortlisting <span className="badge plain">{counts.data?.unprocessable ?? "…"}</span>
+          </button>
+        </div>
         <div className="toolbar slim">
           <select className="select" value={filters.category} onChange={(e) => setFilter("category", e.target.value)} aria-label="Category">
             <option value="">All categories ({totalResumes ?? 0})</option>
@@ -187,7 +206,8 @@ export default function ResumesPage() {
               <tbody>
                 {list.data.items.map((c) => (
                   <tr key={c.id} className="clickable" onClick={() => setOpenId(c.id)}>
-                    <td><div className="cell-title">{c.name ?? "Name not given"}</div><div className="cell-sub">{c.current_title ?? c.email ?? ""}</div></td>
+                    <td><div className="cell-title">{c.name ?? "Name not given"}</div><div className="cell-sub">{c.current_title ?? c.email ?? ""}</div>
+                      {c.readiness !== "ready" && c.readiness_reason && <div className="cell-reason">{c.readiness_reason}</div>}</td>
                     <td>{c.category ? <span className="badge brand plain">{c.category}</span> : "—"}</td>
                     <td>{c.location ?? "—"}</td>
                     <td><JobStatuses items={c.job_statuses} /></td>
@@ -196,6 +216,9 @@ export default function ResumesPage() {
                     <td onClick={(ev) => ev.stopPropagation()}>
                       <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
                         <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View</button>
+                        {filters.readiness === "unprocessable" && (
+                          <button className="btn btn-sm" disabled={place.isPending} onClick={() => place.mutate({ id: c.id, readiness: "ready" })}>Move to ready</button>
+                        )}
                         <button className="btn btn-sm btn-danger btn-icon" title="Delete resume" aria-label={`Delete ${c.name ?? "resume"}`}
                                 disabled={remove.isPending} onClick={() => confirmDelete(c.id, c.name)}><Trash2 /></button>
                       </div>
@@ -243,7 +266,8 @@ export default function ResumesPage() {
         </Modal>
       )}
 
-      {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} onDelete={(name) => confirmDelete(openId, name)} deleting={remove.isPending} />}
+      {openId && <CandidateDrawer id={openId} onClose={() => setOpenId(null)} onDelete={(name) => confirmDelete(openId, name)} deleting={remove.isPending}
+                                      onPlace={(readiness) => place.mutate({ id: openId, readiness })} placing={place.isPending} />}
     </>
   );
 }
@@ -280,7 +304,7 @@ function SourceBadge({ site }: { site: string | null }) {
   return <span className="badge blue plain source-pill"><Globe /> {SITE_LABEL[site] ?? labelize(site)}</span>;
 }
 
-function CandidateDrawer({ id, onClose, onDelete, deleting }: { id: string; onClose: () => void; onDelete: (name: string | null) => void; deleting: boolean }) {
+function CandidateDrawer({ id, onClose, onDelete, deleting, onPlace, placing }: { id: string; onClose: () => void; onDelete: (name: string | null) => void; deleting: boolean; onPlace: (readiness: "ready" | "unprocessable") => void; placing: boolean }) {
   const detail = useQuery({ queryKey: ["candidate", id], queryFn: () => api.getCandidate(id) });
   const [view, setView] = useState<"profile" | "resume">("profile");
   const c = detail.data;
@@ -288,6 +312,7 @@ function CandidateDrawer({ id, onClose, onDelete, deleting }: { id: string; onCl
     <Drawer title={c?.name ?? "Candidate"} onClose={onClose} half
             footer={<>
               <button className="btn btn-danger" disabled={deleting} onClick={() => onDelete(c?.name ?? null)}><Trash2 /> Delete</button>
+              {c && <button className="btn" disabled={placing} onClick={() => onPlace(c.readiness === "ready" ? "unprocessable" : "ready")}>{c.readiness === "ready" ? "Move to not ready" : "Move to ready"}</button>}
               <button className="btn" onClick={() => void downloadFile(`/api/v1/candidates/${id}/resume`, { download: true }, c?.file_name ?? "resume")}>Download</button>
             </>}>
       {detail.isLoading && <Loading />}
