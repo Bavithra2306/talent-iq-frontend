@@ -201,7 +201,7 @@ export default function ResumesPage() {
         {list.data?.items.length === 0 && <Empty title="No resumes found" icon={<Users />}>Upload resumes or use Sourcing.</Empty>}
         {list.data && list.data.items.length > 0 && (
           <div className="table-wrap fit">
-            <table className="table fit">
+            <table className={`table fit ${filters.readiness === "unprocessable" ? "wide-actions" : ""}`}>
               <thead><tr><th>Candidate</th><th>Category</th><th>Location</th><th>Status</th><th>Source</th><th>Added</th><th>Resume</th></tr></thead>
               <tbody>
                 {list.data.items.map((c) => (
@@ -214,7 +214,7 @@ export default function ResumesPage() {
                     <td><SourceBadge site={c.source_site} /></td>
                     <td className="muted">{formatDateTime(c.created_at)}</td>
                     <td onClick={(ev) => ev.stopPropagation()}>
-                      <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                      <div className="row row-actions">
                         <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View</button>
                         {filters.readiness === "unprocessable" && (
                           <button className="btn btn-sm" disabled={place.isPending} onClick={() => place.mutate({ id: c.id, readiness: "ready" })}>Move to ready</button>
