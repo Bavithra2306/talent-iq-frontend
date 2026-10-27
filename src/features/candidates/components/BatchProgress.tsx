@@ -8,7 +8,7 @@ const STAGES: Stage[] = ["created", "collecting", "reading"];
 function friendlyNote(note: string, pending: number): string {
   const when = note.match(/after ([^.]+)\./)?.[1];
   if (/quota/i.test(note)) {
-    return `Today's free AI search limit is used up. ${pending} resume(s) are saved and can already be matched; they will be fully added to search${when ? ` after ${when}` : " tomorrow"}.`;
+    return `Today's free AI search limit is used up. ${pending} resume(s) are saved and read; they join matching once added to search${when ? ` after ${when}` : " tomorrow"}.`;
   }
   return `${pending} resume(s) are being added to search.`;
 }
