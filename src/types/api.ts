@@ -245,6 +245,35 @@ export interface ReviewEvent {
   detail: Record<string, unknown> | string | null;
 }
 
+/** Activity log: candidates shared with hiring managers and where they stand now. */
+export interface DecisionCounts {
+  shared: number;
+  approved: number; // includes "interview scheduled"
+  rejected: number;
+  waiting: number;
+}
+
+export interface JobDecisions extends DecisionCounts {
+  job_id: string;
+  job_title: string;
+  hiring_manager_ids: string[];
+}
+
+export interface DecisionEvent {
+  at: string;
+  decided_by: string | null;
+  job_id: string | null;
+  job_title: string | null;
+  candidate_name: string | null;
+  decision: "approved" | "rejected";
+  comment: string | null;
+}
+
+export interface DecisionSummary extends DecisionCounts {
+  jobs: JobDecisions[];
+  recent: DecisionEvent[];
+}
+
 export interface DirectoryUser {
   id: string;
   name: string | null;

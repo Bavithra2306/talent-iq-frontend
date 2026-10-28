@@ -1137,3 +1137,32 @@ a.sidebar-brand:hover .logo-spark { animation-duration: 1s; }
 .weight-row { align-items: center; }
 .weight-name { display: grid; gap: 1px; min-width: 0; }
 .weight-name small { font-size: 11.5px; line-height: 1.35; }
+
+/* dashboard upload planner: how many resumes are ready for matching today */
+.planner { display: grid; gap: 6px; }
+.planner .slider-row { grid-template-columns: auto 1fr 36px; gap: 10px; font-size: 12.5px; }
+.planner-line { margin: 0; font-size: 13px; line-height: 1.5; }
+.planner .quota-track { margin: 0; height: 8px; }
+.planner-split { display: flex; height: 12px; border-radius: 99px; overflow: hidden; background: var(--ink-100); gap: 2px; }
+.planner-split .ready { background: #16A34A; }
+.planner-split .later { background: #F59E0B; }
+
+/* activity log: hiring manager decisions (one-line dropdown) */
+.decisions-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 16px; background: none; border: none; cursor: pointer; font: inherit; color: var(--ink-900); text-align: left; }
+.decisions-head:hover { background: var(--ink-50, #F8FAFC); }
+.decisions-head .chev { transition: transform .15s; color: var(--ink-500); }
+.decisions-head .chev.open { transform: rotate(90deg); }
+.decision-counts { margin-left: auto; }
+.decisions .ok { color: var(--green-600); }
+.decisions .bad { color: var(--red-600); }
+.decisions-body { border-top: 1px solid var(--ink-200); padding: 4px 16px 12px; display: grid; gap: 8px; font-size: 13px; }
+.decision-list { list-style: none; margin: 0; padding: 0; display: grid; max-height: 240px; overflow-y: auto; }
+.decision-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--ink-100); }
+
+/* activity log: views, search and filters on one line */
+.logs-toolbar { flex-wrap: nowrap; }
+.logs-toolbar .segmented { flex: none; }
+.logs-toolbar .segmented button { white-space: nowrap; }
+.logs-toolbar .grow { min-width: 120px; }
+.logs-toolbar .check { white-space: nowrap; flex: none; }
+@media (max-width: 760px) { .logs-toolbar { flex-wrap: wrap; } }

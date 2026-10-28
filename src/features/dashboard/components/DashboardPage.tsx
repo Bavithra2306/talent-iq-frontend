@@ -1,13 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck, FilePlus2, ListChecks, ScrollText, Upload, UserCheck, UserPlus } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { DashCard, StatCard } from "../../../components/ui/cards";
 import { ROLE_LABEL, useSession } from "../../../app/session";
 import { Alert, BarList, ColumnChart, DonutChart, Funnel, Skeleton, type Slice } from "../../../components/ui";
 import { api } from "../../../services/api";
 import { STATUS_LABEL } from "../../../utils/format";
-import type { CandidateStatus } from "../../../types/api";
+import type { CandidateStatus, EmbeddingQuota } from "../../../types/api";
 
 /** Home: a greeting, counting numbers, a few live charts and quick actions. */
 export default function DashboardPage() {
@@ -103,11 +103,62 @@ function RecruiterHome() {
         <DashCard title="Hiring funnel" hint="How many resumes reach each step" delay={160}>
           {counts.isLoading ? <Skeleton h={130} /> : <Funnel steps={funnel} />}
         </DashCard>
-        <DashCard title="Matching runs" hint="Last 7 days" delay={240} wide>
-          {runs.isLoading ? <Skeleton h={100} /> : <ColumnChart data={days} height={80} />}
+        <DashCard title="Ready for matching today" hint="Resets daily" delay={200}>
+          {quota.isLoading || !quota.data ? <Skeleton h={100} /> : <UploadPlanner quota={quota.data} />}
+        </DashCard>
+        <DashCard title="Matching runs" hint="Last 7 days" delay={240}>
+          {runs.isLoading ? <Skeleton h={130} /> : <ColumnChart data={days} height={100} />}
         </DashCard>
       </div>
     </>
+  );
+}
+
+/** Each resume needs 2 search texts (skills and role), so the daily text limit is shown in resumes. */
+const TEXTS_PER_RESUME = 2;
+
+/** "If you upload N resumes now, how many are ready today?" Resumes already waiting go first. */
+function UploadPlanner({ quota }: { quota: EmbeddingQuota }) {
+  const [upload, setUpload] = useState(100);
+  const perDay = Math.floor(quota.daily_limit / TEXTS_PER_RESUME);
+  const leftToday = Math.floor(quota.remaining_today / TEXTS_PER_RESUME);
+  const usedPct = Math.min(100, Math.round((quota.used_today / quota.daily_limit) * 100));
+  const roomForUpload = Math.max(0, leftToday - quota.resumes_waiting);
+  const readyToday = Math.min(upload, roomForUpload);
+  const later = upload - readyToday;
+  const extraDays = Math.ceil(Math.max(0, later - perDay) / perDay);
+  const laterText = extraDays === 0
+    ? `after ${quota.resumes_at}`
+    : `from ${quota.resumes_at} over the next ${extraDays + 1} days`;
+
+  return (
+    <div className="planner">
+      <p className="planner-line">
+        {quota.paused || leftToday === 0
+          ? <>Today’s limit is used up. New resumes are still read; they become ready for matching after <strong>{quota.resumes_at}</strong>.</>
+          : <>You can make about <strong>{leftToday}</strong> more resume{leftToday === 1 ? "" : "s"} ready for matching today.</>}
+        {quota.resumes_waiting > 0 && <> <strong>{quota.resumes_waiting}</strong> already uploaded {quota.resumes_waiting === 1 ? "is" : "are"} waiting and go first.</>}
+      </p>
+      <div className="quota-track" title={`${usedPct}% of today’s limit used (${perDay} resumes a day)`}>
+        <span className={`quota-fill ${usedPct >= 90 ? "hot" : ""}`} style={{ width: `${usedPct}%` }} />
+      </div>
+      <div className="slider-row">
+        <span className="small">If you upload</span>
+        <input type="range" min={0} max={Math.max(600, perDay * 2)} step={10} value={upload}
+               onChange={(e) => setUpload(Number(e.target.value))} aria-label="Number of resumes to upload" />
+        <strong>{upload}</strong>
+      </div>
+      <div className="planner-split" aria-hidden="true">
+        <span className="ready" style={{ flex: readyToday }} />
+        <span className="later" style={{ flex: later }} />
+      </div>
+      <p className="planner-line">
+        {upload === 0 ? "Move the slider to plan an upload."
+          : later === 0 ? <><strong>All {upload}</strong> will be ready for matching today.</>
+          : readyToday === 0 ? <>They are read right away and become ready for matching <strong>{laterText}</strong>.</>
+          : <><strong>{readyToday}</strong> ready today, <strong>{later}</strong> {laterText}.</>}
+      </p>
+    </div>
   );
 }
 

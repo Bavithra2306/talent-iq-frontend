@@ -6,6 +6,7 @@ import { api } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { describeAction, describeArea, formatDateTime, formatTime, friendlyDetails, labelize } from "../../../utils/format";
 import type { LogEntry, Stage } from "../../../types/api";
+import DecisionsCard from "./DecisionsCard";
 
 const STAGES: Stage[] = ["created", "collecting", "reading", "scoring", "shortlisted", "exported", "partly_completed", "failed"];
 const LIMIT = 30;
@@ -141,21 +142,23 @@ export default function LogsPage() {
       )}
 
       <div className="log-stats">
-        <Reveal><div className="log-stat"><Layers size={18} /><span><strong><AnimatedNumber value={runs.length} /></strong><small>runs (last 200 events)</small></span></div></Reveal>
+        <Reveal><div className="log-stat" title="Uploads, sourcing and matching runs in the latest 200 log steps"><Layers size={18} /><span><strong><AnimatedNumber value={runs.length} /></strong><small>recent activities</small></span></div></Reveal>
         <Reveal delay={60}><div className="log-stat ok"><CheckCircle2 size={18} /><span><strong><AnimatedNumber value={ok} /></strong><small>finished fine</small></span></div></Reveal>
         <Reveal delay={120}><div className={`log-stat ${attention ? "bad" : ""}`}><AlertTriangle size={18} /><span><strong><AnimatedNumber value={attention} /></strong><small>need attention or failed</small></span></div></Reveal>
         <Reveal delay={180}><div className="log-stat"><Clock size={18} /><span><strong>{latest ? timeAgo(latest) : "—"}</strong><small>last activity</small></span></div></Reveal>
       </div>
 
+      <DecisionsCard jobId={filters.job_id} live={live} />
+
       <div className="card">
-        <div className="toolbar">
+        <div className="toolbar slim logs-toolbar">
           <div className="segmented" role="tablist" aria-label="Log view">
             <button role="tab" aria-selected={view === "runs"} className={view === "runs" ? "active" : ""} onClick={() => setView("runs")}><Layers /> Runs</button>
             <button role="tab" aria-selected={view === "list"} className={view === "list" ? "active" : ""} onClick={() => setView("list")}><List /> All steps</button>
           </div>
           <div className="row grow" style={{ position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: 10, color: "var(--ink-400)" }} />
-            <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Search by job, step or result, e.g. failed, Java, sourcing" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className="input grow" style={{ paddingLeft: 32 }} placeholder="Search: failed, Java, sourcing…" title="Search by job, step or result" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <select className="select" value={filters.job_id} onChange={(e) => set({ job_id: e.target.value })}>
             <option value="">All jobs</option>

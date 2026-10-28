@@ -1,6 +1,6 @@
 import { apiClient } from "../lib/axios";
 import type {
-  BatchStatus, Candidate, CandidateDetail, DirectoryUser, EmbeddingQuota, Job,
+  BatchStatus, Candidate, CandidateDetail, DecisionSummary, DirectoryUser, EmbeddingQuota, Job,
   JobExtractResponse, JobInput, LogEntry, Paged, ParsedFilter, ReviewEvent, ReviewFile, Role, RunStatus,
   ShortlistEntry, ShortlistFilters, ShortlistList, SourceInfo, UploadResponse, Weights,
 } from "../types/api";
@@ -112,6 +112,8 @@ export const api = {
 
   // logs
   logs: async (params: Params) => (await apiClient.get<Paged<LogEntry>>(`${v1}/logs`, { params: clean(params) })).data,
+  decisions: async (params: Params) =>
+    (await apiClient.get<DecisionSummary>(`${v1}/logs/decisions`, { params: clean(params) })).data,
 
   // auth service
   directory: async (role: Role) =>

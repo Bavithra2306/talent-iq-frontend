@@ -140,7 +140,7 @@ export function ColumnChart({ data, height = 120 }: { data: Slice[]; height?: nu
   const mounted = useMounted();
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
-    <div className="columns" style={{ height: height + 22 }}>
+    <div className="columns" style={{ height: height + 40 }}>
       {data.map((d, i) => (
         <div key={d.label} className="column" title={`${d.label}: ${d.value}`}>
           <span className="column-value">{d.value}</span>
