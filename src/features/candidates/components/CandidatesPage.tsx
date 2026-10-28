@@ -135,7 +135,7 @@ export default function ResumesPage() {
           {!batchId && (failed.data ?? 0) > 0 && (
             <Alert tone="warn">
               <div className="spread">
-                <span><strong>{failed.data} resume(s) could not be read</strong> (the AI service was busy or the file failed). Run them again; files that still fail are listed with the reason.</span>
+                <span><strong>{failed.data} resume(s) were not finished</strong> (the AI service was busy or processing stopped). Run them again; files that can't be read move to the review list.</span>
                 <button className="btn btn-sm" disabled={retry.isPending} onClick={() => retry.mutate()}>
                   <RotateCcw /> {retry.isPending ? "Starting…" : "Retry failed"}
                 </button>

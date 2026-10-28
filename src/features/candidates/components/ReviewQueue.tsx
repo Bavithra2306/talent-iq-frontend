@@ -5,7 +5,7 @@ import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatDateTime, labelize } from "../../../utils/format";
 
-/** Files judged "not a resume". The recruiter opens each one and decides.
+/** Files judged "not a resume", or that could not be read. The recruiter opens each one and decides.
  *  `origin`: "uploads" on the Resumes page, "sourcing" on the Sourcing page: each page shows its own. */
 export default function ReviewQueue({ origin }: { origin: "uploads" | "sourcing" }) {
   const toast = useToast();
