@@ -28,7 +28,7 @@ export default function ResumesPage() {
   const [batchId, setBatchId] = useState<string | null>(storedBatch);
   const [rejected, setRejected] = useState<{ filename: string; reason: string }[]>([]);
   const [searchParams] = useSearchParams();
-  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", min_experience: "", max_experience: "", status: "", readiness: "ready", sort: "date_added", order: "desc" });
+  const [filters, setFilters] = useState({ category: searchParams.get("category") ?? "", search: "", min_experience: "", max_experience: "", status: "", origin: "", source_site: "", readiness: "ready", sort: "date_added", order: "desc" });
   const [offset, setOffset] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false); // the upload dialog
@@ -161,12 +161,23 @@ export default function ResumesPage() {
             Not ready for shortlisting <span className="badge plain">{counts.data?.unprocessable ?? "…"}</span>
           </button>
         </div>
-        <div className="toolbar slim">
+        <div className="toolbar slim logs-toolbar">
           <select className="select" value={filters.category} onChange={(e) => setFilter("category", e.target.value)} aria-label="Category">
             <option value="">All categories ({totalResumes ?? 0})</option>
             {categories.data?.filter((c) => c.category).map((c) => (
               <option key={c.category} value={c.category ?? ""}>{c.category} ({c.count})</option>
             ))}
+          </select>
+          <select className="select" aria-label="Source" value={filters.source_site ? `site:${filters.source_site}` : filters.origin}
+                  onChange={(e) => {
+                    const v = e.target.value; // "" | uploaded | sourced | site:<name>
+                    const site = v.startsWith("site:") ? v.slice(5) : "";
+                    setFilters((f) => ({ ...f, origin: site ? "sourced" : v, source_site: site })); setOffset(0);
+                  }}>
+            <option value="">All</option>
+            <option value="uploaded">Uploaded</option>
+            <option value="sourced">Sourced (any site)</option>
+            {Object.keys(SITE_LABEL).map((site) => <option key={site} value={`site:${site}`}>Sourced: {SITE_LABEL[site]}</option>)}
           </select>
           <div className="row grow" style={{ position: "relative" }}>
             <Search size={15} style={{ position: "absolute", left: 9, color: "var(--ink-400)" }} />
@@ -291,7 +302,7 @@ function JobStatuses({ items, full }: { items: Candidate["job_statuses"]; full?:
 }
 
 const SITE_LABEL: Record<string, string> = {
-  github: "GitHub", stackexchange: "Stack Overflow", huggingface: "Hugging Face", kaggle: "Kaggle",
+  github: "GitHub", stackexchange: "Stack Overflow", huggingface: "Hugging Face", kaggle: "Kaggle", url: "Your links",
 };
 
 /** Where a resume came from: "Uploaded" by a person, or the public site it was sourced from. */

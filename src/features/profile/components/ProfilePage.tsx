@@ -74,7 +74,7 @@ export default function ProfilePage() {
 
         <div className="card card-pad stack" style={{ gap: 12 }}>
           <div className="appearance">
-            <h2 style={{ fontSize: 15 }}>Appearance</h2>
+            <h2 style={{ fontSize: 13.5 }}>Appearance</h2>
             <div className="segmented" role="group" aria-label="Theme">
               <button className={theme === "light" ? "active" : ""} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><Sun /> Light</button>
               <button className={theme === "dark" ? "active" : ""} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><Moon /> Dark</button>
@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
         <form className="card card-pad stack" onSubmit={submit} noValidate>
           <div className="spread">
-            <h2 style={{ fontSize: 15 }}>Your details</h2>
+            <h2 style={{ fontSize: 13.5 }}>Your details</h2>
             {locked && <span className="lock-note"><Lock size={13} /> Locked</span>}
           </div>
           {locked ? (
@@ -118,7 +118,7 @@ export default function ProfilePage() {
         </form>
 
         <div className="card card-pad stack">
-          <h2 style={{ fontSize: 15 }}>Account</h2>
+          <h2 style={{ fontSize: 13.5 }}>Account</h2>
           <div className="profile-rows">
             <Row icon={<Mail size={15} />} label="Email" value={user.email} />
             <Row icon={<ShieldCheck size={15} />} label="Role" value={ROLE_LABEL[user.role]} />

@@ -118,7 +118,7 @@ export default function ReviewPage() {
                         <div className="cell-sub">{[e.current_title, formatYears(e.total_years_experience)].filter((x) => x && x !== "—").join(" · ")}</div>
                       </td>
                       <td>{e.job_title}</td>
-                      <td style={{ minWidth: 140 }}><ScoreBar value={e.total_score} /></td>
+                      <td><ScoreBar value={e.total_score} /></td>
                       <td onClick={(ev) => ev.stopPropagation()}>
                         <div className="row review-actions">
                           <button className="btn btn-sm btn-icon" title="Details" aria-label="Details" onClick={() => setOpen(e)}><Eye /></button>

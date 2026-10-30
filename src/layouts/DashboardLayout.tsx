@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
-  Briefcase, ClipboardCheck, Globe, LayoutDashboard, ListChecks, LogOut, ChevronLeft, ChevronRight, ScrollText, UserCircle, UserPlus, Users,
+  Briefcase, ClipboardCheck, Globe, LayoutDashboard, LogOut, ChevronLeft, ChevronRight, ScrollText, UserCircle, UserPlus, Users,
   ArrowLeft,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -29,7 +29,6 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { to: "/jobs", label: "Jobs", icon: Briefcase, roles: ["recruiter", "hiring_manager"] },
       { to: "/resumes", label: "Resumes", icon: Users, roles: ["recruiter"] },
       { to: "/sourcing", label: "Sourcing", icon: Globe, roles: ["recruiter"] },
-      { to: "/shortlists", label: "Shortlists", icon: ListChecks, roles: ["recruiter"] },
       { to: "/review", label: "Review", icon: ClipboardCheck, roles: ["hiring_manager"] },
     ],
   },

@@ -6,10 +6,7 @@ import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatYears, labelize } from "../../../utils/format";
 import type { CandidateDetail } from "../../../types/api";
-
-const SITE_LABEL: Record<string, string> = {
-  github: "GitHub", stackexchange: "Stack Overflow", huggingface: "Hugging Face", kaggle: "Kaggle",
-};
+import { SITE_LABEL } from "../sourceLabels";
 
 /** The resumes one sourcing run added, each with what was read from it (click a row to open it). */
 export default function SourcedResumes({ batchId, onClose }: { batchId: string; onClose: () => void }) {
@@ -45,25 +42,30 @@ function SourcedRow({ c, open, onToggle }: { c: CandidateDetail; open: boolean; 
         {c.category && <span className="badge brand plain">{c.category}</span>}
         <span className="badge plain">{c.source_site ? SITE_LABEL[c.source_site] ?? labelize(c.source_site) : "Uploaded"}</span>
       </button>
-      {open && (
-        <div className="sourced-body">
-          <dl className="kv">
-            <dt>Email</dt><dd>{c.email ?? "—"}</dd>
-            <dt>Phone</dt><dd>{c.contact ?? "—"}</dd>
-            <dt>Skills</dt>
-            <dd>{c.skills.length ? <span className="chips">{c.skills.map((s) => <span key={s} className="tag gray">{s}</span>)}</span> : "—"}</dd>
-            <dt>Work history</dt>
-            <dd>{c.roles_and_years?.length
-              ? <ul className="reasons">{c.roles_and_years.map((r, i) => <li key={i}>{[r.title, r.company].filter(Boolean).join(" at ")}{r.years ? ` · ${r.years} yrs` : ""}</li>)}</ul>
-              : "—"}</dd>
-            <dt>Education</dt>
-            <dd>{c.education?.length
-              ? <ul className="reasons">{c.education.map((e, i) => <li key={i}>{[e.degree, e.institution, e.year].filter(Boolean).join(", ")}</li>)}</ul>
-              : "—"}</dd>
-          </dl>
-          <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View resume</button>
-        </div>
-      )}
+      {open && <div className="sourced-body"><CandidateFacts c={c} /></div>}
     </div>
+  );
+}
+
+/** What was read from a sourced resume, with a button to open the file. */
+export function CandidateFacts({ c }: { c: CandidateDetail }) {
+  return (
+    <>
+      <dl className="kv">
+        <dt>Email</dt><dd>{c.email ?? "—"}</dd>
+        <dt>Phone</dt><dd>{c.contact ?? "—"}</dd>
+        <dt>Skills</dt>
+        <dd>{c.skills.length ? <span className="chips">{c.skills.map((s) => <span key={s} className="tag gray">{s}</span>)}</span> : "—"}</dd>
+        <dt>Work history</dt>
+        <dd>{c.roles_and_years?.length
+          ? <ul className="reasons">{c.roles_and_years.map((r, i) => <li key={i}>{[r.title, r.company].filter(Boolean).join(" at ")}{r.years ? ` · ${r.years} yrs` : ""}</li>)}</ul>
+          : "—"}</dd>
+        <dt>Education</dt>
+        <dd>{c.education?.length
+          ? <ul className="reasons">{c.education.map((e, i) => <li key={i}>{[e.degree, e.institution, e.year].filter(Boolean).join(", ")}</li>)}</ul>
+          : "—"}</dd>
+      </dl>
+      <button className="btn btn-sm" onClick={() => openFile(`/api/v1/candidates/${c.id}/resume`, c.name ?? "Resume")}><FileText /> View resume</button>
+    </>
   );
 }

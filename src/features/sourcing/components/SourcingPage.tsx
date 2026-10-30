@@ -8,6 +8,8 @@ import { errorMessage } from "../../../lib/axios";
 import type { SourceInfo } from "../../../types/api";
 import BatchProgress from "../../candidates/components/BatchProgress";
 import ReviewQueue from "../../candidates/components/ReviewQueue";
+import SourcedLibrary from "./SourcedLibrary";
+import { SITE_LABEL } from "../sourceLabels";
 import SourcedResumes from "./SourcedResumes";
 import NeedsDecision from "../../candidates/components/NeedsDecision";
 import { refreshResumeLists } from "../../candidates/refresh";
@@ -46,6 +48,7 @@ export default function SourcingPage() {
   const [viewing, setViewing] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [details, setDetails] = useState<SourceType | null>(null);
+  const [active, setActive] = useState<SourceType | null>("huggingface"); // whose settings show under the tiles
   const hasKeyword = keyword.trim().length >= 2;
 
   const run = useMutation({
@@ -55,11 +58,14 @@ export default function SourcingPage() {
 
   const running = run.isPending || (batchId !== null && !finished); // one run at a time: the button waits for the search to finish
 
-  const toggle = (t: SourceType) => setSelected((s) => {
-    const next = new Set(s);
+  const toggle = (t: SourceType) => {
+    const next = new Set(selected);
     if (next.has(t)) next.delete(t); else next.add(t);
-    return next;
-  });
+    setSelected(next);
+    // Ticking a source shows its settings; unticking the shown one moves to another ticked source.
+    if (next.has(t)) setActive(t);
+    else if (active === t) setActive([...next][0] ?? null);
+  };
   const update = <T extends SourceType>(t: T, patch: Partial<Options[T]>) => setOpts((o) => ({ ...o, [t]: { ...o[t], ...patch } }));
   const urlCount = opts.url.urls.split(/\s+/).filter(Boolean).length;
   const invalid = selected.size === 0 || (selected.has("url") && urlCount === 0);
@@ -68,6 +74,8 @@ export default function SourcingPage() {
     + (selected.has("github") ? opts.github.max_results : 0) + (selected.has("stackexchange") ? opts.stackexchange.max_results : 0)
     + (selected.has("url") ? urlCount : 0);
   const chosen = catalog.data?.filter((s) => selected.has(s.type)) ?? [];
+  const activeSource = chosen.find((s) => s.type === active) ?? null;
+  const detailSource = catalog.data?.find((s) => s.type === details) ?? null;
 
   return (
     <>
@@ -98,7 +106,11 @@ export default function SourcingPage() {
         </div>
       </div>
 
-      <div className="source-grid">
+      <div className="spread source-list-head">
+        <span className="muted small">Click a source to use it; its settings open below.</span>
+        {upTo > 0 && <span className="badge brand plain">Up to <AnimatedNumber value={upTo} /> resumes</span>}
+      </div>
+      <div className="source-grid source-list">
         {catalog.isLoading && Array.from({ length: 5 }, (_, i) => <Skeleton key={i} h={118} r={14} />)}
         {catalog.isError && <Alert tone="error">{errorMessage(catalog.error)}</Alert>}
         {catalog.data?.map((source, i) => {
@@ -107,47 +119,54 @@ export default function SourcingPage() {
           const disabled = !source.configured;
           const open = details === source.type;
           return (
-            <div key={source.type} className={`source-tile reveal ${on ? "on" : ""} ${disabled ? "off" : ""}`} style={{ animationDelay: `${i * 50}ms` }}>
-              <label className="source-tile-main">
+            <div key={source.type} className={`source-tile reveal ${on ? "on" : ""} ${on && active === source.type ? "active" : ""} ${disabled ? "off" : ""}`} style={{ animationDelay: `${i * 50}ms` }}>
+              <label className="source-tile-main" title={source.name}>
                 <input type="checkbox" className="sr-only" checked={on} disabled={disabled} onChange={() => toggle(source.type)} />
                 <span className="source-tile-icon"><Icon size={20} /></span>
-                <span className="source-tile-text"><strong>{source.name}</strong></span>
+                <span className="source-tile-text"><strong>{SITE_LABEL[source.type] ?? source.name}</strong></span>
                 <span className="source-tile-tick"><Check size={14} /></span>
-                <span className="source-tile-desc muted small">{source.description}</span>
+                <span className="source-tile-desc muted small" title={source.description}>{source.description}</span>
               </label>
               <div className="source-tile-foot">
                 {disabled ? <span className="badge amber">Needs setup</span> : <span className="badge green">Ready</span>}
-                <button type="button" className="link-btn" onClick={() => setDetails(open ? null : source.type)} aria-expanded={open}>{open ? "Hide details" : "Details"}</button>
+                <span className="row" style={{ gap: 10 }}>
+                  {on && active !== source.type && <button type="button" className="link-btn" onClick={() => setActive(source.type)}>Settings</button>}
+                  <button type="button" className="link-btn" onClick={() => setDetails(open ? null : source.type)} aria-expanded={open}>{open ? "Hide" : "Details"}</button>
+                </span>
               </div>
-              {open && (
-                <div className="source-tile-info">
-                  <div><strong>How much:</strong> {source.limits}</div>
-                  <div><strong>Good to know:</strong> {source.terms}</div>
-                  {source.needs && <div><strong>Optional setup:</strong> {source.needs}</div>}
-                </div>
-              )}
             </div>
           );
         })}
       </div>
 
-      {chosen.length > 0 && (
-        <div className="card settings-card reveal">
+      {detailSource && (
+        <div className="card card-pad source-about reveal" key={`about-${detailSource.type}`}>
+          <div className="spread">
+            <div className="settings-title">About {detailSource.name}</div>
+            <button type="button" className="link-btn" onClick={() => setDetails(null)}>Hide</button>
+          </div>
+          <div className="source-tile-info">
+            <div><strong>How much:</strong> {detailSource.limits}</div>
+            <div><strong>Good to know:</strong> {detailSource.terms}</div>
+            {detailSource.needs && <div><strong>Optional setup:</strong> {detailSource.needs}</div>}
+          </div>
+        </div>
+      )}
+
+      {activeSource && (
+        <div className="card settings-card source-settings reveal" key={activeSource.type}>
           <div className="card-header">
-            <div><h2>Settings</h2><p>Only the sources you ticked appear here.</p></div>
-            {upTo > 0 && <span className="badge brand plain">Up to <AnimatedNumber value={upTo} /> resumes</span>}
+            <div className="settings-title">{(() => { const Icon = ICONS[activeSource.type]; return <Icon size={16} />; })()} {activeSource.name} settings</div>
+            {chosen.length > 1 && (
+              <div className="segmented" role="tablist" aria-label="Settings for">
+                {chosen.map((src) => (
+                  <button key={src.type} role="tab" aria-selected={active === src.type} className={active === src.type ? "active" : ""}
+                          onClick={() => setActive(src.type)}>{SITE_LABEL[src.type] ?? src.name}</button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="settings-list">
-            {chosen.map((source) => {
-              const Icon = ICONS[source.type];
-              return (
-                <section key={source.type} className="settings-section">
-                  <div className="settings-title"><Icon size={16} /> {source.name}</div>
-                  <SourceOptions type={source.type} opts={opts} update={update} byKeyword={hasKeyword} />
-                </section>
-              );
-            })}
-          </div>
+          <div className="settings-section"><SourceOptions type={activeSource.type} opts={opts} update={update} byKeyword={hasKeyword} /></div>
         </div>
       )}
 
@@ -172,6 +191,8 @@ export default function SourcingPage() {
       <NeedsDecision origin="sourced" />
 
       <ReviewQueue origin="sourcing" />
+
+      <SourcedLibrary sources={catalog.data ?? []} />
     </>
   );
 }

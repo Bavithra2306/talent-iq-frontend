@@ -28,7 +28,7 @@ export default function RecentActivity() {
   return (
     <div className="card recent-activity">
       <div className="spread">
-        <h2 style={{ fontSize: 15 }}>Recent activity</h2>
+        <h2 style={{ fontSize: 13.5 }}>Recent activity</h2>
         <span className="muted small">{logs.isLoading ? "Loading…" : `${total} steps in the last 7 days`}</span>
       </div>
       <div className="activity-bars" role="img" aria-label="Steps per day over the last seven days">

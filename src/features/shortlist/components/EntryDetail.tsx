@@ -57,7 +57,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
       <div className="row" style={{ gap: 16, alignItems: "center" }}>
         <ScoreRing value={entry.total_score} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="row"><strong style={{ fontSize: 16 }}>{entry.name ?? "Name not given"}</strong><StatusBadge status={entry.status} />
+          <div className="row"><strong style={{ fontSize: 14.5 }}>{entry.name ?? "Name not given"}</strong><StatusBadge status={entry.status} />
             {entry.rank && <span className="badge plain">Rank #{entry.rank}</span>}</div>
           <div className="muted">{[entry.current_title, formatYears(entry.total_years_experience), entry.location].filter((x) => x && x !== "—").join(" · ")}</div>
           <div className="muted small">{[entry.email, entry.contact].filter(Boolean).join(" · ")}</div>
@@ -84,7 +84,7 @@ export default function EntryDetail({ entry, onOpenResume, onSaveNotes, savingNo
       {e.reason?.length ? (
         <div>
           <h3 style={{ marginBottom: 8 }}>Why this score</h3>
-          <ul className="reasons" style={{ fontSize: 14 }}>{e.reason.map((r) => <li key={r}>{r.replace(/similar to the job description$/, "matching with the job description")}</li>)}</ul>
+          <ul className="reasons" style={{ fontSize: 12.5 }}>{e.reason.map((r) => <li key={r}>{r.replace(/similar to the job description$/, "matching with the job description")}</li>)}</ul>
         </div>
       ) : null}
 

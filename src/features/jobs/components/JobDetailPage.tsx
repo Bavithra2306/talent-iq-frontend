@@ -7,7 +7,11 @@ import { Alert, Loading, PageHeader, useToast } from "../../../components/ui";
 import { api, openFile } from "../../../services/api";
 import { errorMessage } from "../../../lib/axios";
 import { formatDateTime } from "../../../utils/format";
-import type { JobInput } from "../../../types/api";
+import type { JobInput, Weights } from "../../../types/api";
+import JobCandidates from "./JobCandidates";
+import JobDecisions from "./JobDecisions";
+import JobMatching, { MatchProgress } from "./JobMatching";
+import { useMatching } from "../useMatching";
 import JobForm, { EMPTY_JOB } from "./JobForm";
 
 export default function JobDetailPage() {
@@ -16,7 +20,9 @@ export default function JobDetailPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [previewWeights, setPreviewWeights] = useState<Weights | null>(null); // unsaved weights shown live in the candidates table
   const job = useQuery({ queryKey: ["job", id], queryFn: () => api.getJob(id) });
+  const matching = useMatching(id);
 
   const navigate = useNavigate();
   const remove = useMutation({
@@ -61,7 +67,11 @@ export default function JobDetailPage() {
               </button>
             )}
             {user.role === "recruiter" && (
-              <Link className="btn btn-primary" to={`/jobs/${id}/shortlist`}><ListChecks /> Start matching</Link>
+              <button className="btn btn-primary" disabled={matching.running || !j.skills?.length}
+                      title={j.skills?.length ? "Score the resumes for this job" : "Add required skills to the job first"}
+                      onClick={() => { matching.start(); document.getElementById("matching")?.scrollIntoView({ behavior: "smooth" }); }}>
+                <ListChecks /> {matching.running ? "Matching…" : "Start matching"}
+              </button>
             )}
           </>
         }
@@ -80,32 +90,38 @@ export default function JobDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-2">
-          <div className="card card-pad">
-            <h3 style={{ marginBottom: 14 }}>Details</h3>
-            <dl className="kv">
-              <dt>Role</dt><dd>{j.role_name ?? "—"}</dd>
-              <dt>Category</dt><dd>{j.category ?? "—"}</dd>
-              <dt>Industry</dt><dd>{j.industry ?? "—"}</dd>
-              <dt>Experience</dt><dd>{j.experience_years !== null ? `${j.experience_years}+ years` : "—"}</dd>
-              <dt>Education</dt><dd>{j.education ?? "—"}</dd>
-              <dt>Location</dt><dd>{j.location ?? "—"}</dd>
-              <dt>Work mode</dt><dd>{j.work_mode ?? "—"}</dd>
-              <dt>Created</dt><dd>{formatDateTime(j.created_at)}</dd>
-            </dl>
+        <div className={user.role === "recruiter" ? "jd-top" : undefined}>
+        <div className="card jd-compact">
+          <dl className="jd-facts">
+            {([
+              ["Role", j.role_name], ["Category", j.category], ["Industry", j.industry],
+              ["Experience", j.experience_years !== null ? `${j.experience_years}+ years` : null],
+              ["Education", j.education], ["Location", j.location], ["Work mode", j.work_mode], ["Created", formatDateTime(j.created_at)],
+            ] as const).map(([label, value]) => (
+              <div key={label}><dt>{label}</dt><dd>{value ?? "—"}</dd></div>
+            ))}
+          </dl>
+          <div className="jd-skills">
+            <span className="jd-skills-label">Required skills</span>
+            <div className="chips">{(j.skills ?? []).map((s) => <span key={s} className="tag">{s}</span>)}</div>
+            {!j.skills?.length && <span className="muted small">None yet — add skills so candidates can be checked.</span>}
           </div>
-          <div className="card card-pad stack">
-            <div>
-              <h3 style={{ marginBottom: 10 }}>Required skills</h3>
-              <div className="chips">{(j.skills ?? []).map((s) => <span key={s} className="tag">{s}</span>)}</div>
-              {!j.skills?.length && <p className="muted">None yet — add skills so candidates can be checked.</p>}
-            </div>
-            <div>
-              <h3 style={{ marginBottom: 10 }}>Nice-to-have</h3>
-              <div className="chips">{(j.nice_to_have_skills ?? []).map((s) => <span key={s} className="tag gray">{s}</span>)}</div>
-              {!j.nice_to_have_skills?.length && <p className="muted">None.</p>}
-            </div>
+          <div className="jd-skills">
+            <span className="jd-skills-label">Nice-to-have</span>
+            <div className="chips">{(j.nice_to_have_skills ?? []).map((s) => <span key={s} className="tag gray">{s}</span>)}</div>
+            {!j.nice_to_have_skills?.length && <span className="muted small">None.</span>}
           </div>
+        </div>
+        {user.role === "recruiter" && <JobMatching job={j} onPreview={setPreviewWeights} />}
+        </div>
+      )}
+
+      {!editing && user.role === "hiring_manager" && id && <JobDecisions jobId={id} />}
+
+      {!editing && user.role === "recruiter" && id && (
+        <div id="matching">
+          <MatchProgress job={j} matching={matching} />
+          <JobCandidates jobId={id} previewWeights={previewWeights} />
         </div>
       )}
     </>
